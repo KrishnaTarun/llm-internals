@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+import math
 
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 
 dataclass(frozen=True)
@@ -27,8 +29,29 @@ class Attention(nn.Module):
         super().__init__()
         self.dim = dim
 
+
+    def _scaled_dot_product(self, query, key, value, mask=None):
+
+        dim_k = query.size()[-1]
+
+        #matmul (also referred to as to as logits or attention scores)
+        scores = torch.matmul(query, key.transpose(-2, -1))
+
+        #scale (scaled dot product)
+        scores = scores / math.sqrt(dim_k)
+
+        #TODO: excluding mask for time being
+        #softmax
+        attention_weights = F.softmax(scores, dim=-1)
+
+        #scaled dot product
+        return torch.matmul(attention_weights, value)
+
+
     def forward(self, query, key, value):
         pass
+
+        
 
 class MultiHeadAttention(Attention):
     def __init__(
