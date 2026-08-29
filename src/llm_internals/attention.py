@@ -25,13 +25,29 @@ class AttentionConfig:
             raise ValueError("dropout must be in [0, 1]")
 
 class Attention(nn.Module):
-    def __init__(self, dim):
+    def __init__(self, dmodel:torch.Tensor, num_heads:int, dropout:float=0.0) -> None:
         super().__init__()
-        self.dim = dim
+
+        #this is embedding dimension
+        self.emb_dim = dmodel
+        self.heads = num_heads
+        self.head_dim = self.emb_dim // self.heads
+
+        assert self.emb_dim % self.heads == 0, "Embedding dimension must be divisible by number of heads"
+
+        #projection heads, W(q, i), W(k, i), W(v, i) for each head i.
+        
+
+        #intializw W(O) projection matrix
+        self.W_O = nn.Linear(self.head_dim * self.heads, self.emb_dim) 
+
+
+
 
 
     def _scaled_dot_product(self, query, key, value, mask=None):
 
+        #dimesion of projection head
         dim_k = query.size()[-1]
 
         #matmul (also referred to as to as logits or attention scores)
@@ -43,64 +59,67 @@ class Attention(nn.Module):
         #TODO: excluding mask for time being
         #softmax
         attention_weights = F.softmax(scores, dim=-1)
-
+        
         #scaled dot product
         return torch.matmul(attention_weights, value)
 
 
     def forward(self, query, key, value):
-        pass
-
-        
-
-class MultiHeadAttention(Attention):
-    def __init__(
-        self,
-        model_dim: int,
-        num_heads: int,
-        dropout: float = 0.0,
-    ) -> None:
-        super().__init__(
-            AttentionConfig(
-                model_dim=model_dim,
-                num_heads=num_heads,
-                num_kv_heads=num_heads,
-                dropout=dropout,
-            )
-        )
+        return(self._scaled_dot_product(query, key, value))
 
 
-class MultiQueryAttention(Attention):
-    def __init__(
-        self,
-        model_dim: int,
-        num_heads: int,
-        dropout: float = 0.0,
-    ) -> None:
-        super().__init__(
-            AttentionConfig(
-                model_dim=model_dim,
-                num_heads=num_heads,
-                num_kv_heads=1,
-                dropout=dropout,
-            )
-        )
+mod = Attention(dim=8)
+out = mod(torch.randn(2, 4, 8), torch.randn(2, 4, 8), torch.randn(2, 4, 8))  
+print(out.shape)  
+
+# class MultiHeadAttention(Attention):
+#     def __init__(
+#         self,
+#         model_dim: int,
+#         num_heads: int,
+#         dropout: float = 0.0,
+#     ) -> None:
+#         super().__init__(
+#             AttentionConfig(
+#                 model_dim=model_dim,
+#                 num_heads=num_heads,
+#                 num_kv_heads=num_heads,
+#                 dropout=dropout,
+#             )
+#         )
 
 
-class GroupedQueryAttention(Attention):
-    def __init__(
-        self,
-        model_dim: int,
-        num_heads: int,
-        num_kv_heads: int,
-        dropout: float = 0.0,
-    ) -> None:
-        super().__init__(
-            AttentionConfig(
-                model_dim=model_dim,
-                num_heads=num_heads,
-                num_kv_heads=num_kv_heads,
-                dropout=dropout,
-            )
-        )
+# class MultiQueryAttention(Attention):
+#     def __init__(
+#         self,
+#         model_dim: int,
+#         num_heads: int,
+#         dropout: float = 0.0,
+#     ) -> None:
+#         super().__init__(
+#             AttentionConfig(
+#                 model_dim=model_dim,
+#                 num_heads=num_heads,
+#                 num_kv_heads=1,
+#                 dropout=dropout,
+#             )
+#         )
+
+
+# class GroupedQueryAttention(Attention):
+#     def __init__(
+#         self,
+#         model_dim: int,
+#         num_heads: int,
+#         num_kv_heads: int,
+#         dropout: float = 0.0,
+#     ) -> None:
+#         super().__init__(
+#             AttentionConfig(
+#                 model_dim=model_dim,
+#                 num_heads=num_heads,
+#                 num_kv_heads=num_kv_heads,
+#                 dropout=dropout,
+#             )
+#         )
     
