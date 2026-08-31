@@ -28,7 +28,7 @@ class Attention(nn.Module):
     def __init__(self, dmodel:torch.Tensor, num_heads:int, dropout:float=0.1) -> None:
         super().__init__()
 
-        #TODO: add dropout and masking functionality
+        #TODO: add dropout
 
         #this is embedding dimension
         self.emb_dim = dmodel
@@ -98,59 +98,7 @@ class Attention(nn.Module):
         return self.W_O(at_heads)  # (b, seq_len, emb_dim)
 
 
-
-mod = Attention(dmodel=8, num_heads=2, dropout=0.1)
-out = mod(torch.randn(2, 4, 8), torch.randn(2, 4, 8), torch.randn(2, 4, 8))  
-print(out.shape)  
-
-# class MultiHeadAttention(Attention):
-#     def __init__(
-#         self,
-#         model_dim: int,
-#         num_heads: int,
-#         dropout: float = 0.0,
-#     ) -> None:
-#         super().__init__(
-#             AttentionConfig(
-#                 model_dim=model_dim,
-#                 num_heads=num_heads,
-#                 num_kv_heads=num_heads,
-#                 dropout=dropout,
-#             )
-#         )
-
-
-# class MultiQueryAttention(Attention):
-#     def __init__(
-#         self,
-#         model_dim: int,
-#         num_heads: int,
-#         dropout: float = 0.0,
-#     ) -> None:
-#         super().__init__(
-#             AttentionConfig(
-#                 model_dim=model_dim,
-#                 num_heads=num_heads,
-#                 num_kv_heads=1,
-#                 dropout=dropout,
-#             )
-#         )
-
-
-# class GroupedQueryAttention(Attention):
-#     def __init__(
-#         self,
-#         model_dim: int,
-#         num_heads: int,
-#         num_kv_heads: int,
-#         dropout: float = 0.0,
-#     ) -> None:
-#         super().__init__(
-#             AttentionConfig(
-#                 model_dim=model_dim,
-#                 num_heads=num_heads,
-#                 num_kv_heads=num_kv_heads,
-#                 dropout=dropout,
-#             )
-#         )
-    
+if __name__ == "__main__":
+    mod = Attention(dmodel=8, num_heads=2, dropout=0.1)
+    out = mod(torch.randn(2, 4, 8), torch.randn(2, 4, 8), torch.randn(2, 4, 8))  
+    print(out.shape)  
