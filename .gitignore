@@ -1,2 +1,20 @@
 .venv/
 roadmap/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+coverage/
+htmlcov/
+
+# Build / distribution artifacts
+build/
+dist/
+*.egg-info/

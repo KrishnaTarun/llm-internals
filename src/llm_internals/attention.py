@@ -78,7 +78,7 @@ class Attention(nn.Module):
         return torch.matmul(attention_weights, value)
 
 
-    def forward(self, query, key, value):
+    def forward(self, query, key, value, mask=None):
 
 
         q = self.W_Q(query) # (b, seq_len, emb_dim)
@@ -91,7 +91,7 @@ class Attention(nn.Module):
         v = v.view(v.size(0), v.size(1), self.heads, self.head_dim).transpose(1, 2)  # (b, heads, seq_len, head_dim)
 
         # reshape it to (b, seq_len, heads * head_dim)
-        at_heads = self._scaled_dot_product(q, k, v)  # (b, heads, seq_len, head_dim)
+        at_heads = self._scaled_dot_product(q, k, v, mask)  # (b, heads, seq_len, head_dim)
         at_heads = at_heads.transpose(1, 2).contiguous() # (b, seq_len, heads, head_dim)
         at_heads = at_heads.view(at_heads.size(0), -1, self.emb_dim)  # (b, seq_len, heads * head_dim)
 
