@@ -25,7 +25,7 @@ class AttentionConfig:
             raise ValueError("dropout must be in [0, 1]")
 
 class Attention(nn.Module):
-    def __init__(self, dmodel:torch.Tensor, num_heads:int, dropout:float=0.0) -> None:
+    def __init__(self, dmodel:torch.Tensor, num_heads:int, dropout:float=0.1) -> None:
         super().__init__()
 
         #TODO: add dropout and masking functionality
@@ -48,7 +48,10 @@ class Attention(nn.Module):
         self.W_K = nn.Linear(self.emb_dim, self.head_dim * self.heads, bias=False)
         self.W_V = nn.Linear(self.emb_dim, self.head_dim * self.heads, bias=False)
         
-        self.W_O = nn.Linear(self.head_dim * self.heads, self.emb_dim, bias=False) 
+        self.W_O = nn.Linear(self.head_dim * self.heads, self.emb_dim, bias=False)
+
+        # Ignore for the moment
+        self.dropout = nn.Dropout(dropout)
 
 
     def _scaled_dot_product(self, query, key, value, mask=None):
@@ -59,11 +62,16 @@ class Attention(nn.Module):
         #matmul (also referred to as to as logits or attention scores)
         scores = torch.matmul(query, key.transpose(-2, -1))
 
-        #scale (scaled dot product)
+        # normalization
         scores = scores / math.sqrt(dim_k)
 
-        #TODO: excluding mask for time being
-        #softmax
+
+        # Causal masking: mask out future tokens in the sequence.
+        # This is done by setting the scores of the future tokens to -inf,
+        # so that after applying softmax, their probabilities become 0.
+        if mask is not None:
+            scores = scores.masked_fill(mask == 0, float('-inf'))
+
         attention_weights = F.softmax(scores, dim=-1)
         
         #scaled dot product
