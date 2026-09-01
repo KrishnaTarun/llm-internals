@@ -4,7 +4,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from llm_internals.model_components.attention import Attention
+from model_components.attention import Attention
 
 
 

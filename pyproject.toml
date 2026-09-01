@@ -1,5 +1,5 @@
 [project]
-name = "llm-internals"
+name = "model-components"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -14,8 +14,11 @@ dependencies = [
     "torchvision==0.17.2",
 ]
 
-[project.scripts]
-llm-internals = "llm_internals:main"
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src*"]
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]

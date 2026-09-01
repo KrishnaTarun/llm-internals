@@ -1,6 +1,6 @@
 import torch
 
-from llm_internals.attention import AttentionConfig, MultiHeadAttention
+from model_components.attention import AttentionConfig, MultiHeadAttention
 
 
 def test_attention_config_and_mha_forward_shape() -> None:
