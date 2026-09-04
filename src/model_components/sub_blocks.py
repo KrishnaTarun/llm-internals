@@ -41,3 +41,12 @@ class ResidualConnection(nn.Module):
     def forward(self, x, sublayer_output):
         return self.layer_norm(x + self.dropout(sublayer_output))
 
+class ProjectionLayer(nn.Module):
+
+    def __init__(self, d_model, vocab_size) -> None:
+        super().__init__()
+        self.proj = nn.Linear(d_model, vocab_size)
+
+    def forward(self, x) -> torch.Tensor:
+        return self.proj(x)
+
