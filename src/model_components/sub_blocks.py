@@ -1,7 +1,19 @@
 # this contains sub-modules that are reusbale across different model architectures
+import math
+
 import torch
 from torch import nn
 import torch.nn.functional as F
+
+
+class Embedding(nn.Module):
+    def __init__(self, vocab_size:int, dmodel:int) -> None:
+        super().__init__()
+        self.embedding = nn.Embedding(vocab_size, dmodel)
+        self.dmodel = dmodel
+
+    def forward(self, x):
+        return self.embedding(x) * math.sqrt(self.dmodel)
 
 
 class FeedForward(nn.Module):
@@ -28,4 +40,13 @@ class ResidualConnection(nn.Module):
 
     def forward(self, x, sublayer_output):
         return self.layer_norm(x + self.dropout(sublayer_output))
+
+class ProjectionLayer(nn.Module):
+
+    def __init__(self, d_model, vocab_size) -> None:
+        super().__init__()
+        self.proj = nn.Linear(d_model, vocab_size)
+
+    def forward(self, x) -> torch.Tensor:
+        return self.proj(x)
 

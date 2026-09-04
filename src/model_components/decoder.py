@@ -24,9 +24,9 @@ class DecoderLayer(nn.Module):
         self.rc2 = ResidualConnection(dmodel, dropout)
         self.rc3 = ResidualConnection(dmodel, dropout)
 
-    def forward(self, x, enc_output, causal_mask=None, padding_mask=None):
+    def forward(self, x, enc_output, look_ahead_mask=None, padding_mask=None):
         # Masked multi-head attention (self-attention)
-        mha = self.mmha(x, x, x, causal_mask)
+        mha = self.mmha(x, x, x, look_ahead_mask)
         x = self.rc1(x, mha)
 
         # Multi-head attention (encoder-decoder attention)

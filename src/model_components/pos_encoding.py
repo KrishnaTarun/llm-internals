@@ -16,7 +16,7 @@ class SinCosinePositionalEncoding(nn.Module):
 
 
         #this is used for computation efficiency
-        denom = torch.exp(torch.arange(0, d_model, 2).float() * (-torch.log(torch.tensor(10000.0)) / d_model))
+        denom = torch.exp(torch.arange(0, d_model, 2).float() * (-torch.log(10000.0) / d_model))
         
         #even
         pos_en[:, 0::2] = torch.sin(pos.unsqueeze(1) * denom)
