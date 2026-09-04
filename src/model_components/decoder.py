@@ -24,9 +24,9 @@ class DecoderLayer(nn.Module):
         self.rc2 = ResidualConnection(dmodel, dropout)
         self.rc3 = ResidualConnection(dmodel, dropout)
 
-    def forward(self, x, enc_output, look_ahead_mask=None, padding_mask=None):
+    def forward(self, x, enc_output, causal_mask=None, padding_mask=None):
         # Masked multi-head attention (self-attention)
-        mha = self.mmha(x, x, x, look_ahead_mask)
+        mha = self.mmha(x, x, x, causal_mask)
         x = self.rc1(x, mha)
 
         # Multi-head attention (encoder-decoder attention)
@@ -37,6 +37,20 @@ class DecoderLayer(nn.Module):
         ffn_output = self.ffn(x)
         x = self.rc3(x, ffn_output)
 
+        return x
+
+class TransformerDecoderBlock(nn.Module):
+    def __init__(self, num_layers:int,
+                       dmodel:int, 
+                       dff:int, 
+                       num_heads:int, 
+                       dropout:float=0.1) -> None:
+        super().__init__()
+        self.layers = nn.ModuleList([DecoderLayer(dmodel, dff, num_heads, dropout) for _ in range(num_layers)])
+
+    def forward(self, x, enc_output, causal_mask=None, padding_mask=None):
+        for layer in self.layers:
+            x = layer(x, enc_output, causal_mask, padding_mask)
         return x
 
 if __name__ == "__main__":
