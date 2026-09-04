@@ -2,36 +2,10 @@
 
 import torch
 from torch import nn
-import torch.nn.functional as F
 
 from model_components.attention import Attention
+from model_components.sub_blocks import FeedForward, ResidualConnection
 
-
-
-class FeedForward(nn.Module):
-    def __init__(self, dmodel:torch.Tensor, dff:int, dropout:float=0.1) -> None:
-        super().__init__()
-    
-        self.W1 = nn.Linear(dmodel, dff, bias=True)
-        self.W2 = nn.Linear(dff, dmodel, bias=True)
-
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self, x):
-        x = self.W1(x)
-        x = F.relu(x)
-        x = self.W2(x)
-        return x
-    
-class ResidualConnection(nn.Module):
-    def __init__(self, dmodel:int, dropout:float=0.1) -> None:
-        super().__init__()
-
-        self.dropout = nn.Dropout(dropout)
-        self.layer_norm = nn.LayerNorm(dmodel)
-
-    def forward(self, x, sublayer_output):
-        return self.layer_norm(x + self.dropout(sublayer_output))
 
 class EncoderLayer(nn.Module):
     def __init__(self, dmodel:int, dff:int, num_heads:int, dropout:float=0.1) -> None:
@@ -67,9 +41,9 @@ class TransformerEncoderBlock(nn.Module):
         super().__init__()
         self.layers = nn.ModuleList([EncoderLayer(dmodel, dff, num_heads, dropout) for _ in range(num_layers)])
 
-    def forward(self, x, mask=None):
+    def forward(self, x, padding_mask=None):
         for layer in self.layers:
-            x = layer(x, mask)
+            x = layer(x, padding_mask)
         return x
 
 if __name__ == "__main__":
@@ -77,13 +51,23 @@ if __name__ == "__main__":
     # Example usage
     batch_size = 2
     seq_length = 5
-    dmodel = 16
-    dff = 64
+    dmodel = 8
+    dff = 32
     num_heads = 4
     num_layers = 1
 
+    src_pad_idx = 0
+        # tgt_pad_ids = 0
+    
+    src = torch.tensor([[1, 2, 3, 4, 0], [5, 6, 7, 0, 0]]) # (batch, seq_length)
+    # tgt = torch.tensor([[1, 2, 3, 0, 0], [4, 5, 0, 0, 0]])
+    
+    padding_mask = (src != src_pad_idx).int().unsqueeze(1).unsqueeze(2)  # (batch, 1, 1, seq_length)
+    print(padding_mask.shape)
+    print(padding_mask)
+
     x = torch.rand(batch_size, seq_length, dmodel)
-    mask = None  # Example mask (no masking in this case)
+    mask = padding_mask
 
     encoder_block = TransformerEncoderBlock(num_layers, dmodel, dff, num_heads)
     output = encoder_block(x, mask)
