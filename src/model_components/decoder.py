@@ -39,6 +39,20 @@ class DecoderLayer(nn.Module):
 
         return x
 
+class TransformerDecoderBlock(nn.Module):
+    def __init__(self, num_layers:int,
+                       dmodel:int, 
+                       dff:int, 
+                       num_heads:int, 
+                       dropout:float=0.1) -> None:
+        super().__init__()
+        self.layers = nn.ModuleList([DecoderLayer(dmodel, dff, num_heads, dropout) for _ in range(num_layers)])
+
+    def forward(self, x, enc_output, causal_mask=None, padding_mask=None):
+        for layer in self.layers:
+            x = layer(x, enc_output, causal_mask, padding_mask)
+        return x
+
 if __name__ == "__main__":
     # Example usage
     batch_size = 2
