@@ -20,8 +20,8 @@ class FeedForward(nn.Module):
     def __init__(self, dmodel:torch.Tensor, dff:int, dropout:float=0.1) -> None:
         super().__init__()
     
-        self.W1 = nn.Linear(dmodel, dff, bias=True)
-        self.W2 = nn.Linear(dff, dmodel, bias=True)
+        self.W1 = nn.Linear(dmodel, dff, bias=False)
+        self.W2 = nn.Linear(dff, dmodel, bias=False)
 
         self.dropout = nn.Dropout(dropout)
 
@@ -45,7 +45,7 @@ class ProjectionLayer(nn.Module):
 
     def __init__(self, d_model, vocab_size) -> None:
         super().__init__()
-        self.proj = nn.Linear(d_model, vocab_size)
+        self.proj = nn.Linear(d_model, vocab_size, bias=False)
 
     def forward(self, x) -> torch.Tensor:
         return self.proj(x)
