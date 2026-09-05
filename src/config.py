@@ -6,7 +6,7 @@ import yaml
 
 @dataclass
 class ModelConfig:
-
+    model_type: str = "Seq2Seq"
     d_model: int = 128
     dff: int = 512
     num_heads: int = 8
