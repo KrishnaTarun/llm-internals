@@ -9,10 +9,21 @@ authors = [
 requires-python = ">=3.11"
 
 dependencies = [
+    "datasets>=5.0.1",
     "numpy<2",
     "torch==2.2.2",
     "torchvision==0.17.2",
+    "transformers",
 ]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
 
 [tool.setuptools]
 package-dir = {"" = "src"}
