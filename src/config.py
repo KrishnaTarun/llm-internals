@@ -4,6 +4,7 @@ import torch
 import dacite
 import yaml
 
+#keeponly that are common rest can live in model.yaml file
 @dataclass
 class ModelConfig:
     model_type: str = "Seq2Seq"
