@@ -17,6 +17,7 @@ class ModelConfig:
 @dataclass
 class DatasetConfig:
 
+    tokenizer_path: str = "translation_en-nl_tokenizer.json"
     seq_len: int = 100
     src_vocab_size: int = 100
     tgt_vocab_size: int = 100
