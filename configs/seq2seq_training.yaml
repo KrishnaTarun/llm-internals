@@ -1,0 +1,22 @@
+data:
+
+    src_vocab_size: 100
+    tgt_vocab_size: 100
+    src_pad_idx: 0
+    tgt_pad_idx: 0
+
+model:
+
+    d_model: 128
+    dff: 512
+    num_heads: 8
+    seq_len: 100
+    enc_num_layers: 2
+    dec_num_layers: 1
+    dropout: 0.1
+
+training:
+
+     batch_size: 32
+     num_epochs: 10
+     learning_rate: 0.001
