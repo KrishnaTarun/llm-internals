@@ -63,6 +63,7 @@ class TranslationDataset(Dataset):
 
         self.dataset = dataset
 
+        #hard code tokenizer_name
         self.src_tokenizer = BuildTokenizer(get_sentences(dataset, src_lang), 
                                             "translation_en_tokenizer.json")
         truncation_and_padding(self.src_tokenizer, seq_len)
@@ -121,13 +122,13 @@ class TranslationDataset(Dataset):
         tgt_ids_in = torch.tensor(tgt_ids_in, dtype=torch.long)
 
         # get_padding mask for src
-        src_mask = (src_ids!= self.src_pad_id).int().unsqueeze(1).unsqueeze(2)  # (1, 1, seq_length)
+        src_mask = (src_ids!= self.src_pad_id).int().unsqueeze(0).unsqueeze(0)  # (1, 1, seq_length)
 
         # get_padding mask for tgt
-        tgt_mask = (tgt_ids_in!= self.tgt_pad_id).int().unsqueeze(1).unsqueeze(2)  # (1, 1, seq_length)
+        tgt_mask = (tgt_ids_in!= self.tgt_pad_id).int().unsqueeze(0).unsqueeze(0)  # (1, 1, seq_length)
         
         # get causal mask for tgt
-        look_ahead_mask = torch.tril(torch.ones((self.seq_len, self.seq_len))).unsqueeze(1) # (1, seq_length, seq_length)
+        look_ahead_mask = torch.tril(torch.ones((self.seq_len, self.seq_len))).unsqueeze(0) # (1, seq_length, seq_length)
         causal_mask = look_ahead_mask * tgt_mask  # Combine look-ahead and padding masks
 
         return {

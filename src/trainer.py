@@ -1,19 +1,31 @@
 
 import torch
 from torch import nn
+from torch.utils.data import Dataset
 
 from config import Config
 
-class Trainer:
-    def __init__(self, model: nn.Module, config: Config):
-        self.model = model
-        self.criterion = nn.CrossEntropyLoss(ignore_index=config.data.tgt_pad_idx)
-        self.optimizer = torch.optim.Adam(model.parameters(), lr=config.training.learning_rate, weight_decay=config.training.weight_decay)
+class LLMTrainer:
+    def __init__(self, model: nn.Module, config: Config, dataset: Dataset):
+
+        
+        self.config = config
+        self.model = model.to(config.training.device)
+        self.device = config.training.device 
+        self.dataset = dataset
+
+
+
+
+        self.criterion = nn.CrossEntropyLoss(ignore_index=self.dataset.tgt_pad_id)
+        self.optimizer = torch.optim.Adam(model.parameters(), 
+                                          lr=config.training.learning_rate,
+                                          weight_decay=config.training.weight_decay)
         self.device = config.training.device
 
-    def _train_step(self, src_batch, tgt_batch):
+    def _train_epoch(self, loader):
         """
-        Perform a single training step.
+        Perform a single epoch fo training.
 
         Args:
             src_batch (torch.Tensor): Source batch of shape (batch_size, seq_len).
@@ -23,21 +35,30 @@ class Trainer:
             float: The loss value for the current training step.
         """
         self.model.train()
-        src_batch = src_batch.to(self.device)
-        tgt_batch = tgt_batch.to(self.device)
+        total_loss = 0.0
+        
 
-        # Forward pass
-        output = self.model(src_batch, tgt_batch[:, :-1])  # Exclude the last token for teacher forcing
-        loss = self.criterion(output.reshape(-1, output.size(-1)), tgt_batch[:, 1:].reshape(-1))  # Shift target for loss calculation
+        for batch in loader:
+            #FIXME write assertions
+            src_batch = batch["src"].to(self.device)
+            tgt_batch = batch["tgt"].to(self.device)
+            label = batch["label"].to(self.device)
+            padding_mask = batch["src_mask"].to(self.device)
+            causal_mask = batch["causal_mask"].to(self.device)
 
-        # Backward pass and optimization
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
+            logits = self.model(src_batch, tgt_batch, causal_mask, padding_mask)
+            loss = self.criterion(logits.view(-1, self.dataset.tgt_vocab_size), label.view(-1))
+            total_loss+=loss.item()
 
-        return loss.item()
+            # Backward pass and optimization
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
 
-    def fit(self, train_loader, num_epochs):
+        return total_loss
+
+    def fit(self, train_loader, val_loader):
+        
         """
         Train the model for a specified number of epochs.
 
@@ -45,14 +66,16 @@ class Trainer:
             train_loader (torch.utils.data.DataLoader): DataLoader for training data.
             num_epochs (int): Number of epochs to train the model.
         """
+        #TODO: Average  meter 
+        num_epochs = self.config.training.num_epochs
+        train_loss = 0
         for epoch in range(num_epochs):
-            total_loss = 0
-            for src_batch, tgt_batch in train_loader:
-                loss = self._train_step(src_batch, tgt_batch)
-                total_loss += loss
-
-            avg_loss = total_loss / len(train_loader)
+            train_loss = self._train_epoch(train_loader)
+            avg_loss = train_loss / len(train_loader)
             print(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {avg_loss:.4f}")
+
+        #TODO save model
             
-    @torch.no_grad()
-    def evaluate(self, val_loader):
+            
+    # @torch.no_grad()
+    # def evaluate(self, val_loader):

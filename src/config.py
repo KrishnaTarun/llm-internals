@@ -20,17 +20,13 @@ class DatasetConfig:
 
     tokenizer_path: str = "translation_en-nl_tokenizer.json"
     seq_len: int = 100
-    src_vocab_size: int = 100
-    tgt_vocab_size: int = 100
-    src_pad_idx: int = 0
-    tgt_pad_idx: int = 0
 
 @dataclass
 class TrainingConfig:
 
     device: str = field(default_factory=lambda: "cuda" if torch.cuda.is_available() else "cpu")
-    batch_size: int = 32
-    num_epochs: int = 10
+    batch_size: int = 4
+    num_epochs: int = 2
     learning_rate: float = 0.001
     weight_decay: float = 0.0001
     warmup_steps: int = 4000
