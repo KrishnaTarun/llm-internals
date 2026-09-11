@@ -1,0 +1,52 @@
+# this contains sub-modules that are reusbale across different model architectures
+import math
+
+import torch
+from torch import nn
+import torch.nn.functional as F
+
+
+class Embedding(nn.Module):
+    def __init__(self, vocab_size:int, dmodel:int) -> None:
+        super().__init__()
+        self.embedding = nn.Embedding(vocab_size, dmodel)
+        self.dmodel = dmodel
+
+    def forward(self, x):
+        return self.embedding(x) * math.sqrt(self.dmodel)
+
+
+class FeedForward(nn.Module):
+    def __init__(self, dmodel:torch.Tensor, dff:int, dropout:float=0.1) -> None:
+        super().__init__()
+    
+        self.W1 = nn.Linear(dmodel, dff, bias=False)
+        self.W2 = nn.Linear(dff, dmodel, bias=False)
+
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        x = self.W1(x)
+        x = F.relu(x)
+        x = self.W2(x)
+        return x
+    
+class ResidualConnection(nn.Module):
+    def __init__(self, dmodel:int, dropout:float=0.1) -> None:
+        super().__init__()
+
+        self.dropout = nn.Dropout(dropout)
+        self.layer_norm = nn.LayerNorm(dmodel)
+
+    def forward(self, x, sublayer_output):
+        return self.layer_norm(x + self.dropout(sublayer_output))
+
+class ProjectionLayer(nn.Module):
+
+    def __init__(self, d_model, vocab_size) -> None:
+        super().__init__()
+        self.proj = nn.Linear(d_model, vocab_size, bias=False)
+
+    def forward(self, x) -> torch.Tensor:
+        return self.proj(x)
+
