@@ -35,6 +35,9 @@ class BuildTokenizer:
         else:
             self.tokenizer = Tokenizer.from_file(str(self.tokenizer_path))
 
+            self.start_token_id = self.tokenizer.token_to_id("[SOS]")
+            self.end_token_id = self.tokenizer.token_to_id("[EOS]")
+
 
     def get_tokenizer(self):
 

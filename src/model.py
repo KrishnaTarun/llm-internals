@@ -71,13 +71,24 @@ class Seq2SeqModel(nn.Module):
     # def create_padding_mask(self, seq, pad_idx):
     #     # Create a mask for padding tokens
     #     return (seq != pad_idx).unsqueeze(1).unsqueeze(2)  # (batch_size, 1, 1, seq_len)
-
-    def forward(self, src, tgt, causal_mask=None, padding_mask=None):
+    def encoderblock(self, src, padding_mask):
 
         enc_in = self.enc_pos_encoding(self.src_emb(src))
         enc_out = self.encoder(enc_in, padding_mask)
 
+        return enc_out
+    
+    def decoderblock(self, enc_out, tgt, causal_mask, padding_mask):
+
         dec_in = self.dec_pos_encoding(self.tgt_emb(tgt))
         dec_out = self.decoder(dec_in, enc_out, causal_mask, padding_mask)
+
+        return dec_out
+
+    def forward(self, src, tgt, causal_mask=None, padding_mask=None):
+
+        
+        enc_out = self.encoderblock(src, padding_mask)
+        dec_out = self.decoderblock(enc_out, tgt, causal_mask, padding_mask)
 
         return self.projection_layer(dec_out)

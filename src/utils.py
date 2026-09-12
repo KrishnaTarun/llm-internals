@@ -20,7 +20,7 @@ def get_dataset(config: Config):
     train, val = random_split(dataset, [0.8, 0.2])
 
     train_loader = DataLoader(train, shuffle=True, batch_size =config.training.batch_size)
-    val_loader = DataLoader(train, shuffle=True, batch_size =config.training.batch_size)
+    val_loader = DataLoader(val, shuffle=False, batch_size =config.training.batch_size)
     return dataset, train_loader, val_loader
 
 

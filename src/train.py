@@ -31,12 +31,7 @@ def train(config:Config):
     #FIXME: Add support for other model types in the future
     model = get_model(config, src_vocab=src_vocab_size, tgt_vocab= tgt_vocab_size)
 
-    # # Define loss function and optimizer
-    # criterion = nn.CrossEntropyLoss(ignore_index=config.data.tgt_pad_idx)
-    # optimizer = torch.optim.Adam(model.parameters(), lr=config.training.learning_rate, weight_decay=config.training.weight_decay)
 
-    # Placeholder for data loading (to be implemented)
-    # train_loader = ...
     trainer = LLMTrainer(model, config, dataset)
     trainer.fit(train_loader, val_loader)
 
