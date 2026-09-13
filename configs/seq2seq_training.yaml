@@ -1,5 +1,5 @@
 data:
-
+    # train_val_split:
     src_vocab_size: 100
     tgt_vocab_size: 100
     src_pad_idx: 0
@@ -17,6 +17,6 @@ model:
 
 training:
 
-     batch_size: 32
+     batch_size: 10
      num_epochs: 10
      learning_rate: 0.001
