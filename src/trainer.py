@@ -68,14 +68,14 @@ class LLMTrainer:
             num_epochs (int): Number of epochs to train the model.
         """
         #TODO: Average  meter 
-        self.greedy_decode(val_loader)
-        # num_epochs = self.config.training.num_epochs
-        # for epoch in range(num_epochs):
+        num_epochs = self.config.training.num_epochs
+        for epoch in range(num_epochs):
 
-        #     train_loss = self._train_epoch(train_loader)
-        #     validation_loss = self.evaluate(val_loader)
-        #     print(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {train_loss:.4f}")
-        #     print(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {validation_loss:.4f}")
+            train_loss = self._train_epoch(train_loader)
+            self.greedy_decode(val_loader)
+            # validation_loss = self.evaluate(val_loader)
+            print(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {train_loss:.4f}")
+            # print(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {validation_loss:.4f}")
 
         #TODO save model
             
@@ -98,7 +98,7 @@ class LLMTrainer:
 
     
     @torch.no_grad()
-    def greedy_decode(self,loader):
+    def greedy_decode(self,loader)->None:
 
         """
         Loader here is basically a test_loader or validation loader.
@@ -116,27 +116,48 @@ class LLMTrainer:
             src_mask = sentence["src_mask"].to(self.device).unsqueeze(0)
 
             #get encoder out
-            enc_out = self.model.encoderblock(src, src_mask)
+            enc_out = self.model.encoderblock(src, src_mask) # (b=1, seq_len, emb_dim)
 
             dec_in = torch.empty(1,1).fill_(self.dataset.tgt_tokenizer.start_token_id).type_as(src).to(self.device)
             while True:
 
                 if dec_in.size(1) == self.config.data.seq_len:
+                   self.idstotext(src, sentence["tgt"], dec_in.squeeze(0))
                    break
                 causal_mask= torch.tril(torch.ones((dec_in.size(1), dec_in.size(1)))).unsqueeze(0)
                 #unsqeeze extra to add batch diemsnion
                 causal_mask = causal_mask.unsqueeze(0)
 
                 dec_out = self.model.decoderblock(enc_out, dec_in, causal_mask, src_mask)
-                prob = self.model.projection_layer(dec_out)
+                prob = self.model.projection_layer(dec_out[:, -1]) #select the recently generated output
                 _, next_word = torch.max(prob, dim=1)
                 #FIXME this
                 dec_in = torch.cat([dec_in, torch.empty(1, 1).type_as(src).fill_(next_word.item()).to(self.device)], dim=1)
 
                 if next_word == self.dataset.tgt_tokenizer.end_token_id:
+                    #decode and break
+                    self.idstotext(src, sentence["tgt"], dec_in.squeeze(0)) # get rid of batch dimension
+                    
+
                     break
 
-                return dec_in.squeeze(0)
+        return
+
+    def idstotext(self, src, tgt, gen_ids)->None:
+
+        src_text = self.dataset.src_tokenizer.tokenizer.decode(src.squeeze(0).cpu().numpy().tolist(), skip_special_tokens=True)
+        tgt_text = self.dataset.tgt_tokenizer.tokenizer.decode(tgt.cpu().numpy().tolist(), skip_special_tokens=True)
+        gen_text = self.dataset.tgt_tokenizer.tokenizer.decode(gen_ids.cpu().numpy().tolist(), skip_special_tokens=True)
+        print()
+        print(f"Input Soruce text =====> {src_text}")
+        print(f"===================================")
+        print(f"Target text ===========> {tgt_text}")
+        print(f"===================================")
+        print(f"Generated text ========> {gen_text}")
+        print()
+
+        return
+
 
 
 
