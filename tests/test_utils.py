@@ -26,7 +26,9 @@ class DummyDataset(Dataset):
 
 def test_create_train_val_loaders_returns_expected_batches():
     dataset = DummyDataset()
-    train_loader, val_loader = create_train_val_loaders(dataset, batch_size=4, val_ratio=0.25, seed=42)
+    train_loader, val_loader = create_train_val_loaders(
+        dataset, batch_size=4, val_ratio=0.25, seed=42
+    )
 
     assert len(train_loader) == 9
     assert len(val_loader) == 3

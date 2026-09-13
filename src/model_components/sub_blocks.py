@@ -2,12 +2,12 @@
 import math
 
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class Embedding(nn.Module):
-    def __init__(self, vocab_size:int, dmodel:int) -> None:
+    def __init__(self, vocab_size: int, dmodel: int) -> None:
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, dmodel)
         self.dmodel = dmodel
@@ -17,9 +17,9 @@ class Embedding(nn.Module):
 
 
 class FeedForward(nn.Module):
-    def __init__(self, dmodel:torch.Tensor, dff:int, dropout:float=0.1) -> None:
+    def __init__(self, dmodel: torch.Tensor, dff: int, dropout: float = 0.1) -> None:
         super().__init__()
-    
+
         self.W1 = nn.Linear(dmodel, dff, bias=False)
         self.W2 = nn.Linear(dff, dmodel, bias=False)
 
@@ -30,9 +30,10 @@ class FeedForward(nn.Module):
         x = F.relu(x)
         x = self.W2(x)
         return x
-    
+
+
 class ResidualConnection(nn.Module):
-    def __init__(self, dmodel:int, dropout:float=0.1) -> None:
+    def __init__(self, dmodel: int, dropout: float = 0.1) -> None:
         super().__init__()
 
         self.dropout = nn.Dropout(dropout)
@@ -41,12 +42,11 @@ class ResidualConnection(nn.Module):
     def forward(self, x, sublayer_output):
         return self.layer_norm(x + self.dropout(sublayer_output))
 
-class ProjectionLayer(nn.Module):
 
+class ProjectionLayer(nn.Module):
     def __init__(self, d_model, vocab_size) -> None:
         super().__init__()
         self.proj = nn.Linear(d_model, vocab_size, bias=False)
 
     def forward(self, x) -> torch.Tensor:
         return self.proj(x)
-

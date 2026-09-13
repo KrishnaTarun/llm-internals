@@ -1,8 +1,8 @@
 import torch
 
 from config import Config, load_config
-from utils import get_model, get_dataset
 from trainer import LLMTrainer
+from utils import get_dataset, get_model
 
 
 # TODO: GPU check and device assignment
