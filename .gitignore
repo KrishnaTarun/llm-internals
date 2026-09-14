@@ -22,3 +22,6 @@ dist/
 
 # json files/ artifacts
 *.json
+
+#test folders for time being
+tests/
