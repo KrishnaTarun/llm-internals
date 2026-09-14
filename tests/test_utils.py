@@ -5,7 +5,10 @@ from utils import create_train_val_loaders
 
 
 class DummyDataset(Dataset):
+    """Provide small deterministic samples for data-loader tests."""
+
     def __init__(self):
+        """Initialize twelve dummy translation examples."""
         self.items = [
             {
                 "src": torch.tensor([1, 2, 3]),
@@ -18,15 +21,20 @@ class DummyDataset(Dataset):
         ]
 
     def __len__(self):
+        """Return the number of dummy examples."""
         return len(self.items)
 
     def __getitem__(self, idx):
+        """Return the dummy example at ``idx``."""
         return self.items[idx]
 
 
 def test_create_train_val_loaders_returns_expected_batches():
+    """Verify loader sizes, keys, and batch dimensions."""
     dataset = DummyDataset()
-    train_loader, val_loader = create_train_val_loaders(dataset, batch_size=4, val_ratio=0.25, seed=42)
+    train_loader, val_loader = create_train_val_loaders(
+        dataset, batch_size=4, val_ratio=0.25, seed=42
+    )
 
     assert len(train_loader) == 9
     assert len(val_loader) == 3
