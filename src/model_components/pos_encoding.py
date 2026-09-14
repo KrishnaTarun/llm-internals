@@ -5,11 +5,10 @@ from torch import nn
 
 
 class SinCosinePositionalEncoding(nn.Module):
-    """
-    The one introduced in Attention is All You Need (Vaswani et al., 2017) paper.
-    """
+    """The one introduced in Attention is All You Need (Vaswani et al., 2017) paper."""
 
     def __init__(self, d_model, dropout, max_len):
+        """Initialize sinusoidal encodings for sequences up to ``max_len``."""
         super(SinCosinePositionalEncoding, self).__init__()
 
         self.dropout = nn.Dropout(p=dropout)
@@ -17,9 +16,7 @@ class SinCosinePositionalEncoding(nn.Module):
         pos = torch.arange(0, max_len, dtype=torch.float)
 
         # this is used for computation efficiency
-        denom = torch.exp(
-            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)
-        )
+        denom = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
 
         # even
         pos_en[:, 0::2] = torch.sin(pos.unsqueeze(1) * denom)
@@ -33,11 +30,13 @@ class SinCosinePositionalEncoding(nn.Module):
         self.register_buffer("pos_en", pos_en)
 
     def forward(self, x):
-        """
+        """Add positional encodings to an input tensor.
+
         Args:
-            x: Tensor of shape (batch_size, seq_len, d_model)
+            x: Tensor of shape (batch_size, seq_len, d_model).
+
         Returns:
-            Tensor of shape (batch_size, seq_len, d_model) with positional encodings added
+            Tensor of shape (batch_size, seq_len, d_model) with positional encodings.
         """
         seq_len = x.size(1)
         x = x + (self.pos_en[:, :seq_len:]).requires_grad_(False)

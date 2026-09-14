@@ -7,11 +7,10 @@ from utils import get_dataset, get_model
 
 # TODO: GPU check and device assignment
 def train(config: Config):
-    """
-    Train the model based on the provided configuration.
+    """Train the model based on the provided configuration.
 
     Args:
-        config (Config): Configuration object containing model, training, and dataset parameters.
+        config (Config): Configuration containing model, training, and data parameters.
     """
     # Set random seed for reproducibility
     # FIXME this properly

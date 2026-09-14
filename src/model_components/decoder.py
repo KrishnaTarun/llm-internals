@@ -6,9 +6,15 @@ from model_components.sub_blocks import FeedForward, ResidualConnection
 
 
 class DecoderLayer(nn.Module):
-    def __init__(
-        self, dmodel: int, dff: int, num_heads: int, dropout: float = 0.1
-    ) -> None:
+    """This class builds a single decoder layer"""
+
+    def __init__(self, dmodel: int, dff: int, num_heads: int, dropout: float = 0.1) -> None:
+        """Args:
+
+        dmodel: Embedding dimension
+        num_heads: Number of attention heads
+        dropout: Dropout rate
+        """
         super().__init__()
         # masked-multihead attention
         # initialized similarly but in forward will have mask
@@ -25,7 +31,7 @@ class DecoderLayer(nn.Module):
         self.rc2 = ResidualConnection(dmodel, dropout)
         self.rc3 = ResidualConnection(dmodel, dropout)
 
-    def forward(self, x, enc_output, look_ahead_mask=None, padding_mask=None):
+    def forward(self, x, enc_output, look_ahead_mask=None, padding_mask=None):  # noqa: D102
         # Masked multi-head attention (self-attention)
         mha = self.mmha(x, x, x, look_ahead_mask)
         x = self.rc1(x, mha)
@@ -42,6 +48,8 @@ class DecoderLayer(nn.Module):
 
 
 class TransformerDecoderBlock(nn.Module):
+    """Builds an entire transformer based decoder block"""
+
     def __init__(
         self,
         num_layers: int,
@@ -50,12 +58,21 @@ class TransformerDecoderBlock(nn.Module):
         num_heads: int,
         dropout: float = 0.1,
     ) -> None:
+        """Args:
+
+        num_layer: Number of decoder layers
+        dmodel: Embedding dimension
+        dff: Dimensions in feedforward layer
+        num_heads: Number of attention heads
+        dropout: Dropout rate
+        """
         super().__init__()
+
         self.layers = nn.ModuleList(
             [DecoderLayer(dmodel, dff, num_heads, dropout) for _ in range(num_layers)]
         )
 
-    def forward(self, x, enc_output, causal_mask=None, padding_mask=None):
+    def forward(self, x, enc_output, causal_mask=None, padding_mask=None):  # noqa: D102
         for layer in self.layers:
             x = layer(x, enc_output, causal_mask, padding_mask)
         return x
@@ -74,9 +91,7 @@ if __name__ == "__main__":
     src = torch.tensor([[1, 2, 3, 4, 0], [5, 6, 7, 0, 0]])
     tgt = torch.tensor([[1, 2, 3, 0, 0], [4, 5, 0, 0, 0]])
 
-    padding_mask = (
-        (src != src_pad_idx).int().unsqueeze(1).unsqueeze(2)
-    )  # (batch, 1, 1, seq_length)
+    padding_mask = (src != src_pad_idx).int().unsqueeze(1).unsqueeze(2)  # (batch, 1, 1, seq_length)
     look_ahead_mask = (
         torch.tril(torch.ones((seq_length, seq_length))).unsqueeze(0).unsqueeze(0)
     )  # (1, 1, seq_length, seq_length)
@@ -87,9 +102,7 @@ if __name__ == "__main__":
     print("Padding mask shape:", padding_mask)
     print("Look-ahead mask shape:", look_ahead_mask)
     # print("Target padding mask shape:", padding_mask_tgt.shape)
-    causal_mask = (
-        look_ahead_mask * padding_mask_tgt
-    )  # Combine look-ahead and padding masks
+    causal_mask = look_ahead_mask * padding_mask_tgt  # Combine look-ahead and padding masks
     print("Causal mask shape:", causal_mask.shape)
     print("Causal mask:", causal_mask)
 

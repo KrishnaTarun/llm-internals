@@ -10,7 +10,6 @@ from model import Seq2SeqModel
 
 def get_dataset(config: Config):
     """Build the configured translation dataset."""
-
     dataset = TranslationDataset(
         dataset=load_dataset("Helsinki-NLP/opus_books", "en-nl", split="train"),
         seq_len=config.data.seq_len,
@@ -18,14 +17,13 @@ def get_dataset(config: Config):
 
     train, val = random_split(dataset, [0.8, 0.2])
 
-    train_loader = DataLoader(
-        train, shuffle=True, batch_size=config.training.batch_size
-    )
+    train_loader = DataLoader(train, shuffle=True, batch_size=config.training.batch_size)
     val_loader = DataLoader(val, shuffle=False, batch_size=config.training.batch_size)
     return dataset, train_loader, val_loader
 
 
 def get_model(config: Config, src_vocab: int, tgt_vocab: int):
+    """Build the configured model using the supplied vocabulary sizes."""
     if config.model.model_type == "Seq2Seq":
         return Seq2SeqModel(
             n_layers_enc=config.model.enc_num_layers,

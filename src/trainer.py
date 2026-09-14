@@ -7,7 +7,10 @@ from config import Config
 
 
 class LLMTrainer:
+    """Train and evaluate a sequence-to-sequence language model."""
+
     def __init__(self, model: nn.Module, config: Config, dataset: Dataset):
+        """Initialize the model, loss function, optimizer, and training dataset."""
         self.config = config
         self.model = model.to(config.training.device)
         self.device = config.training.device
@@ -25,12 +28,10 @@ class LLMTrainer:
         self.device = config.training.device
 
     def _train_epoch(self, loader):
-        """
-        Perform a single epoch fo training.
+        """Perform a single epoch fo training.
 
         Args:
-            src_batch (torch.Tensor): Source batch of shape (batch_size, seq_len).
-            tgt_batch (torch.Tensor): Target batch of shape (batch_size, seq_len).
+            loader: DataLoader containing training batches.
 
         Returns:
             float: The loss value for the current training step.
@@ -47,9 +48,7 @@ class LLMTrainer:
             causal_mask = batch["causal_mask"].to(self.device)
 
             logits = self.model(src_batch, tgt_batch, causal_mask, padding_mask)
-            loss = self.criterion(
-                logits.view(-1, self.dataset.tgt_vocab_size), label.view(-1)
-            )
+            loss = self.criterion(logits.view(-1, self.dataset.tgt_vocab_size), label.view(-1))
             total_loss += loss.item()
 
             # Backward pass and optimization
@@ -60,12 +59,11 @@ class LLMTrainer:
         return total_loss / len(loader)
 
     def fit(self, train_loader, val_loader):
-        """
-        Train the model for a specified number of epochs.
+        """Train the model for a specified number of epochs.
 
         Args:
             train_loader (torch.utils.data.DataLoader): DataLoader for training data.
-            num_epochs (int): Number of epochs to train the model.
+            val_loader (torch.utils.data.DataLoader): DataLoader for validation data.
         """
         # TODO: Average  meter
         num_epochs = self.config.training.num_epochs
@@ -80,6 +78,7 @@ class LLMTrainer:
 
     @torch.no_grad()
     def evaluate(self, val_loader):
+        """Return the average loss over the validation data."""
         self.model.eval()
         val_loss = 0.0
 
@@ -98,11 +97,14 @@ class LLMTrainer:
 
     @torch.no_grad()
     def greedy_decode(self, loader) -> None:
-        """
-        Loader here is basically a test_loader or validation loader.
+        """Decode randomly selected examples from a validation or test loader.
+
+        The loader can be replaced with a sentence-level input in a future revision.
+
+        Args:
+            loader: DataLoader containing examples to decode.
         This could be also modified for taking a sentence but its a TODO.
         """
-
         self.model.eval()
         # generate random sentence ids to verify
         sentence_ids = np.random.randint(0, len(loader.dataset), size=(2,))
@@ -126,15 +128,11 @@ class LLMTrainer:
                 if dec_in.size(1) == self.config.data.seq_len:
                     self.idstotext(src, sentence["tgt"], dec_in.squeeze(0))
                     break
-                causal_mask = torch.tril(
-                    torch.ones((dec_in.size(1), dec_in.size(1)))
-                ).unsqueeze(0)
+                causal_mask = torch.tril(torch.ones((dec_in.size(1), dec_in.size(1)))).unsqueeze(0)
                 # unsqeeze extra to add batch diemsnion
                 causal_mask = causal_mask.unsqueeze(0)
 
-                dec_out = self.model.decoderblock(
-                    enc_out, dec_in, causal_mask, src_mask
-                )
+                dec_out = self.model.decoderblock(enc_out, dec_in, causal_mask, src_mask)
                 prob = self.model.projection_layer(
                     dec_out[:, -1]
                 )  # select the recently generated output
@@ -143,10 +141,7 @@ class LLMTrainer:
                 dec_in = torch.cat(
                     [
                         dec_in,
-                        torch.empty(1, 1)
-                        .type_as(src)
-                        .fill_(next_word.item())
-                        .to(self.device),
+                        torch.empty(1, 1).type_as(src).fill_(next_word.item()).to(self.device),
                     ],
                     dim=1,
                 )
@@ -162,6 +157,7 @@ class LLMTrainer:
         return
 
     def idstotext(self, src, tgt, gen_ids) -> None:
+        """Decode and print source, target, and generated token IDs."""
         src_text = self.dataset.src_tokenizer.tokenizer.decode(
             src.squeeze(0).cpu().numpy().tolist(), skip_special_tokens=True
         )

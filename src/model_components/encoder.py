@@ -6,9 +6,10 @@ from model_components.sub_blocks import FeedForward, ResidualConnection
 
 
 class EncoderLayer(nn.Module):
-    def __init__(
-        self, dmodel: int, dff: int, num_heads: int, dropout: float = 0.1
-    ) -> None:
+    """Encoder layer"""
+
+    def __init__(self, dmodel: int, dff: int, num_heads: int, dropout: float = 0.1) -> None:
+        """Initialize attention, feed-forward, and residual sublayers."""
         super().__init__()
         # dff: int: The dimensionality of the feed-forward network's hidden layer.
         # This is typically larger than dmodel to allow for more complex transformations.
@@ -21,6 +22,7 @@ class EncoderLayer(nn.Module):
         self.rc2 = ResidualConnection(dmodel, dropout)
 
     def forward(self, x, mask=None):
+        """Apply the encoder layer to an input tensor and optional mask."""
         mha = self.mha(x, x, x, mask)
         x = self.rc1(x, mha)
 
@@ -31,6 +33,8 @@ class EncoderLayer(nn.Module):
 
 
 class TransformerEncoderBlock(nn.Module):
+    """Stack multiple encoder layers."""
+
     def __init__(
         self,
         num_layers: int,
@@ -39,12 +43,14 @@ class TransformerEncoderBlock(nn.Module):
         num_heads: int,
         dropout: float = 0.1,
     ) -> None:
+        """Initialize a stack containing ``num_layers`` encoder layers."""
         super().__init__()
         self.layers = nn.ModuleList(
             [EncoderLayer(dmodel, dff, num_heads, dropout) for _ in range(num_layers)]
         )
 
     def forward(self, x, padding_mask=None):
+        """Apply every encoder layer to the input tensor."""
         for layer in self.layers:
             x = layer(x, padding_mask)
         return x
@@ -65,9 +71,7 @@ if __name__ == "__main__":
     src = torch.tensor([[1, 2, 3, 4, 0], [5, 6, 7, 0, 0]])  # (batch, seq_length)
     # tgt = torch.tensor([[1, 2, 3, 0, 0], [4, 5, 0, 0, 0]])
 
-    padding_mask = (
-        (src != src_pad_idx).int().unsqueeze(1).unsqueeze(2)
-    )  # (batch, 1, 1, seq_length)
+    padding_mask = (src != src_pad_idx).int().unsqueeze(1).unsqueeze(2)  # (batch, 1, 1, seq_length)
     print(padding_mask.shape)
     print(padding_mask)
 

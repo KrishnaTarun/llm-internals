@@ -4,6 +4,7 @@ from model_components.attention import AttentionConfig, MultiHeadAttention
 
 
 def test_attention_config_and_mha_forward_shape() -> None:
+    """Verify attention configuration and output shape."""
     config = AttentionConfig(model_dim=8, num_heads=2, num_kv_heads=2)
     assert config.model_dim == 8
 

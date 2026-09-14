@@ -12,6 +12,7 @@ from torch.utils.data import Dataset
 
 
 def get_sentences(ds, lang=None):
+    """Yield translations or sentences in the requested language."""
     for item in ds:
         if lang is None:
             yield item["translation"]
@@ -19,6 +20,7 @@ def get_sentences(ds, lang=None):
 
 
 def truncation_and_padding(tokenizer, seq_len, pad_token="[PAD]"):
+    """Configure a tokenizer to truncate and pad sequences to a fixed length."""
     # FIXME
     tokenizer.tokenizer.enable_truncation(max_length=seq_len)
     tokenizer.tokenizer.enable_padding(
@@ -29,7 +31,10 @@ def truncation_and_padding(tokenizer, seq_len, pad_token="[PAD]"):
 
 
 class BuildTokenizer:
+    """Build or load a WordLevel tokenizer for a dataset."""
+
     def __init__(self, dataset: iter, tokenizer_path: str):
+        """Initialize a tokenizer from disk or train one from ``dataset``."""
         self.ds = dataset
         self.tokenizer_path = Path(__file__).resolve().parent.parent / tokenizer_path
 
@@ -42,6 +47,7 @@ class BuildTokenizer:
             self.end_token_id = self.tokenizer.token_to_id("[EOS]")
 
     def get_tokenizer(self):
+        """Train, configure, save, and return a WordLevel tokenizer."""
         tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
         tokenizer.normalizer = Lowercase()
         tokenizer.pre_tokenizer = Whitespace()
@@ -70,7 +76,10 @@ class BuildTokenizer:
 
 
 class TranslationDataset(Dataset):
+    """Prepare tokenized source and target examples for sequence-to-sequence training."""
+
     def __init__(self, dataset, src_lang="en", tgt_lang="nl", seq_len=100):
+        """Initialize the dataset and its source and target tokenizers."""
         self.dataset = dataset
 
         # hard code tokenizer_name
@@ -97,9 +106,11 @@ class TranslationDataset(Dataset):
         self.tgt_vocab_size = self.tgt_tokenizer.tokenizer.get_vocab_size()
 
     def __len__(self):
+        """Return the number of translation examples."""
         return len(self.dataset)
 
     def __getitem__(self, idx):
+        """Return one padded source, target, label, and attention-mask example."""
         item = self.dataset[idx]
 
         src_text = item["translation"][self.src_lang]
@@ -141,9 +152,9 @@ class TranslationDataset(Dataset):
         )  # (1, 1, seq_length)
 
         # get causal mask for tgt
-        look_ahead_mask = torch.tril(
-            torch.ones((self.seq_len, self.seq_len))
-        ).unsqueeze(0)  # (1, seq_length, seq_length)
+        look_ahead_mask = torch.tril(torch.ones((self.seq_len, self.seq_len))).unsqueeze(
+            0
+        )  # (1, seq_length, seq_length)
         causal_mask = look_ahead_mask * tgt_mask  # Combine look-ahead and padding masks
 
         return {
@@ -168,27 +179,23 @@ if __name__ == "__main__":
     print("TranslationDataset works:", sample["src"].shape, sample["tgt"].shape)
     print(
         "Source:",
-        a.src_tokenizer.tokenizer.decode(
-            sample["src"].tolist(), skip_special_tokens=False
-        ),
+        a.src_tokenizer.tokenizer.decode(sample["src"].tolist(), skip_special_tokens=False),
     )
     print(
         "Target:",
-        a.tgt_tokenizer.tokenizer.decode(
-            sample["tgt"].tolist(), skip_special_tokens=False
-        ),
+        a.tgt_tokenizer.tokenizer.decode(sample["tgt"].tolist(), skip_special_tokens=False),
     )
     print(
         "Target Label",
-        a.tgt_tokenizer.tokenizer.decode(
-            sample["label"].tolist(), skip_special_tokens=False
-        ),
+        a.tgt_tokenizer.tokenizer.decode(sample["label"].tolist(), skip_special_tokens=False),
     )
     # # print(list(a))
 
     # tokenizer = BuildTokenizer(a, "translation_en-nl_tokenizer.json")
     # tokenizer.tokenizer.enable_truncation(max_length=10)
-    # tokenizer.tokenizer.enable_padding(length=10, pad_id=tokenizer.tokenizer.token_to_id("[PAD]"), pad_token="[PAD]")
+    # tokenizer.tokenizer.enable_padding(
+    #     length=10, pad_id=tokenizer.tokenizer.token_to_id("[PAD]"), pad_token="[PAD]"
+    # )
     # print(tokenizer.tokenizer.encode("Let's test this tokenizer...").tokens)
     # # batch_sentences = [
     # #     "But what about second breakfast?",

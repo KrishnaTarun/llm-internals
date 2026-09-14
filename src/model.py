@@ -10,9 +10,7 @@ from model_components import (
 
 
 class Seq2SeqModel(nn.Module):
-    """
-    A sequence-to-sequence model that combines an encoder and a decoder.
-    """
+    """A sequence-to-sequence model that combines an encoder and a decoder."""
 
     def __init__(
         self,
@@ -26,6 +24,7 @@ class Seq2SeqModel(nn.Module):
         tgt_vocab_size: int,
         seq_len: int,
     ):
+        """Initialize encoder, decoder, embeddings, and output projection."""
         super(Seq2SeqModel, self).__init__()
 
         self.encoder = TransformerEncoderBlock(
@@ -53,13 +52,12 @@ class Seq2SeqModel(nn.Module):
         self.dec_pos_encoding = SinCosinePositionalEncoding(
             d_model=d_model, dropout=dropout, max_len=seq_len
         )
-        self.projection_layer = ProjectionLayer(
-            d_model=d_model, vocab_size=tgt_vocab_size
-        )
+        self.projection_layer = ProjectionLayer(d_model=d_model, vocab_size=tgt_vocab_size)
 
         self.init_parameters()
 
     def init_parameters(self):
+        """Initialize trainable weights for the model's supported layer types."""
         for module in self.modules():
             if isinstance(module, nn.Linear):
                 nn.init.xavier_uniform_(module.weight)
@@ -71,25 +69,22 @@ class Seq2SeqModel(nn.Module):
                 nn.init.ones_(module.weight)
                 nn.init.zeros_(module.bias)
 
-    #     self.src_pad_idx = config.src_pad_idx
-    #     self.tgt_pad_idx = config.tgt_pad_idx
-
-    # def create_padding_mask(self, seq, pad_idx):
-    #     # Create a mask for padding tokens
-    #     return (seq != pad_idx).unsqueeze(1).unsqueeze(2)  # (batch_size, 1, 1, seq_len)
     def encoderblock(self, src, padding_mask):
+        """Encode source token IDs with positional embeddings and attention."""
         enc_in = self.enc_pos_encoding(self.src_emb(src))
         enc_out = self.encoder(enc_in, padding_mask)
 
         return enc_out
 
     def decoderblock(self, enc_out, tgt, causal_mask, padding_mask):
+        """Decode target token IDs using encoder output and attention masks."""
         dec_in = self.dec_pos_encoding(self.tgt_emb(tgt))
         dec_out = self.decoder(dec_in, enc_out, causal_mask, padding_mask)
 
         return dec_out
 
     def forward(self, src, tgt, causal_mask=None, padding_mask=None):
+        """Run the source and target tensors through the sequence-to-sequence model."""
         enc_out = self.encoderblock(src, padding_mask)
         dec_out = self.decoderblock(enc_out, tgt, causal_mask, padding_mask)
 

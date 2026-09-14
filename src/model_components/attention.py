@@ -6,9 +6,15 @@ from torch import nn
 
 
 class Attention(nn.Module):
-    def __init__(
-        self, dmodel: torch.Tensor, num_heads: int, dropout: float = 0.1
-    ) -> None:
+    """Mulit-head Attention"""
+
+    def __init__(self, dmodel: torch.Tensor, num_heads: int, dropout: float = 0.1) -> None:
+        """Args:
+
+        dmodel: Embedding dimension
+        num_heads: Number of attention heads
+        dropout: Dropout rate
+        """
         super().__init__()
 
         # TODO: add dropout
@@ -59,7 +65,7 @@ class Attention(nn.Module):
         # scaled dot product
         return torch.matmul(attention_weights, value)
 
-    def forward(self, query, key, value, mask=None):
+    def forward(self, query, key, value, mask=None):  # noqa: D102
         q = self.W_Q(query)  # (b, seq_len, emb_dim)
         k = self.W_K(key)  # (b, seq_len, emb_dim)
         v = self.W_V(value)  # (b, seq_len, emb_dim)
@@ -76,12 +82,8 @@ class Attention(nn.Module):
         )  # (b, heads, seq_len, head_dim)
 
         # reshape it to (b, seq_len, heads * head_dim)
-        at_heads = self._scaled_dot_product(
-            q, k, v, mask
-        )  # (b, heads, seq_len, head_dim)
-        at_heads = at_heads.transpose(
-            1, 2
-        ).contiguous()  # (b, seq_len, heads, head_dim)
+        at_heads = self._scaled_dot_product(q, k, v, mask)  # (b, heads, seq_len, head_dim)
+        at_heads = at_heads.transpose(1, 2).contiguous()  # (b, seq_len, heads, head_dim)
         at_heads = at_heads.view(
             at_heads.size(0), -1, self.emb_dim
         )  # (b, seq_len, heads * head_dim)
