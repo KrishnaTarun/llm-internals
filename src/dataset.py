@@ -16,6 +16,7 @@ def get_sentences(ds, lang=None):
     for item in ds:
         if lang is None:
             yield item["translation"]
+            continue
         yield item["translation"][lang]
 
 

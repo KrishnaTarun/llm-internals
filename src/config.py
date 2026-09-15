@@ -40,7 +40,7 @@ class TrainingConfig:
     warmup_steps: int = 4000
     seed: int = 42
     checkpoint_dir: str = "output/checkpoints"  # for save model
-    resume_from: str = "output/checkpoints/Seq2Seq/model.pt"  # model path
+    resume_from: str = None  # model path: e.g,: "output/checkpoints/Seq2Seq/model.pt"
 
 
 @dataclass
