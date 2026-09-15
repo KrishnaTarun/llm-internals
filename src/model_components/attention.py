@@ -24,9 +24,7 @@ class Attention(nn.Module):
         self.heads = num_heads
         self.head_dim = self.emb_dim // self.heads
 
-        assert self.emb_dim % self.heads == 0, (
-            "Embedding dimension must be divisible by number of heads"
-        )
+        assert self.emb_dim % self.heads == 0, "Embedding dimension must be divisible by number of heads"
 
         # projection heads, W(q, i), W(k, i), W(v, i) for each head i.
         """
@@ -71,22 +69,14 @@ class Attention(nn.Module):
         v = self.W_V(value)  # (b, seq_len, emb_dim)
 
         # prepare q, k, v for multi-head attention
-        q = q.view(q.size(0), q.size(1), self.heads, self.head_dim).transpose(
-            1, 2
-        )  # (b, heads, seq_len, head_dim)
-        k = k.view(k.size(0), k.size(1), self.heads, self.head_dim).transpose(
-            1, 2
-        )  # (b, heads, seq_len, head_dim)
-        v = v.view(v.size(0), v.size(1), self.heads, self.head_dim).transpose(
-            1, 2
-        )  # (b, heads, seq_len, head_dim)
+        q = q.view(q.size(0), q.size(1), self.heads, self.head_dim).transpose(1, 2)  # (b, heads, seq_len, head_dim)
+        k = k.view(k.size(0), k.size(1), self.heads, self.head_dim).transpose(1, 2)  # (b, heads, seq_len, head_dim)
+        v = v.view(v.size(0), v.size(1), self.heads, self.head_dim).transpose(1, 2)  # (b, heads, seq_len, head_dim)
 
         # reshape it to (b, seq_len, heads * head_dim)
         at_heads = self._scaled_dot_product(q, k, v, mask)  # (b, heads, seq_len, head_dim)
         at_heads = at_heads.transpose(1, 2).contiguous()  # (b, seq_len, heads, head_dim)
-        at_heads = at_heads.view(
-            at_heads.size(0), -1, self.emb_dim
-        )  # (b, seq_len, heads * head_dim)
+        at_heads = at_heads.view(at_heads.size(0), -1, self.emb_dim)  # (b, seq_len, heads * head_dim)
 
         return self.W_O(at_heads)  # (b, seq_len, emb_dim)
 

@@ -36,7 +36,10 @@ class BuildTokenizer:
     def __init__(self, dataset: iter, tokenizer_path: str):
         """Initialize a tokenizer from disk or train one from ``dataset``."""
         self.ds = dataset
-        self.tokenizer_path = Path(__file__).resolve().parent.parent / tokenizer_path
+        # ===========setup path======
+        project_root = Path(__file__).resolve().parent.parent
+        artifact_dir = project_root / "dataset_artifacts" / "translation"
+        self.tokenizer_path = artifact_dir / tokenizer_path
 
         if not self.tokenizer_path.exists():
             self.tokenizer = self.get_tokenizer()
@@ -83,14 +86,10 @@ class TranslationDataset(Dataset):
         self.dataset = dataset
 
         # hard code tokenizer_name
-        self.src_tokenizer = BuildTokenizer(
-            get_sentences(dataset, src_lang), "translation_en_tokenizer.json"
-        )
+        self.src_tokenizer = BuildTokenizer(get_sentences(dataset, src_lang), "translation_en_tokenizer.json")
         truncation_and_padding(self.src_tokenizer, seq_len)
 
-        self.tgt_tokenizer = BuildTokenizer(
-            get_sentences(dataset, tgt_lang), "translation_nl_tokenizer.json"
-        )
+        self.tgt_tokenizer = BuildTokenizer(get_sentences(dataset, tgt_lang), "translation_nl_tokenizer.json")
         # Don't intiate truncationa nd padding for decoder will be clear
         # in later partd
         # truncation_and_padding(self.tgt_tokenizer, seq_len)
@@ -142,14 +141,10 @@ class TranslationDataset(Dataset):
         tgt_ids_in = torch.tensor(tgt_ids_in, dtype=torch.long)
 
         # get_padding mask for src
-        src_mask = (
-            (src_ids != self.src_pad_id).int().unsqueeze(0).unsqueeze(0)
-        )  # (1, 1, seq_length)
+        src_mask = (src_ids != self.src_pad_id).int().unsqueeze(0).unsqueeze(0)  # (1, 1, seq_length)
 
         # get_padding mask for tgt
-        tgt_mask = (
-            (tgt_ids_in != self.tgt_pad_id).int().unsqueeze(0).unsqueeze(0)
-        )  # (1, 1, seq_length)
+        tgt_mask = (tgt_ids_in != self.tgt_pad_id).int().unsqueeze(0).unsqueeze(0)  # (1, 1, seq_length)
 
         # get causal mask for tgt
         look_ahead_mask = torch.tril(torch.ones((self.seq_len, self.seq_len))).unsqueeze(
