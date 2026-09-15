@@ -4,7 +4,6 @@ from torch import nn
 from torch.utils.data import Dataset
 
 from config import Config
-from utils import load_checkpoint, save_checkpoint
 
 
 class LLMTrainer:
@@ -16,9 +15,10 @@ class LLMTrainer:
         self.model = model.to(config.training.device)
         self.device = config.training.device
         self.dataset = dataset
-        self.current_epoch = 0
 
-        self.criterion = nn.CrossEntropyLoss(ignore_index=self.dataset.tgt_pad_id, label_smoothing=0.1)
+        self.criterion = nn.CrossEntropyLoss(
+            ignore_index=self.dataset.tgt_pad_id, label_smoothing=0.1
+        )
         self.optimizer = torch.optim.Adam(
             model.parameters(),
             lr=config.training.learning_rate,
@@ -26,31 +26,6 @@ class LLMTrainer:
         )
 
         self.device = config.training.device
-
-    def save_checkpoint(self, epoch: int, checkpoint_path: str | None = None):
-        """Persist model and optimizer state using the shared utility helper."""
-        if checkpoint_path is None:
-            raise ValueError("No path provided")
-        self.current_epoch = epoch
-        return save_checkpoint(
-            self.model,
-            self.optimizer,
-            epoch,
-            checkpoint_path,
-        )
-
-    def load_checkpoint(self, checkpoint_path: str):
-        """Restore model and optimizer state using the shared utility helper."""
-        if checkpoint_path is None:
-            raise ValueError("No path provided")
-
-        self.current_epoch = load_checkpoint(
-            self.model,
-            self.optimizer,
-            checkpoint_path,
-            self.device,
-        )
-        return self.current_epoch
 
     def _train_epoch(self, loader):
         """Perform a single epoch fo training.
@@ -63,9 +38,8 @@ class LLMTrainer:
         """
         self.model.train()
         total_loss = 0.0
-        num_batches = len(loader)
 
-        for step, batch in enumerate(loader, start=1):
+        for batch in loader:
             # FIXME write assertions
             src_batch = batch["src"].to(self.device)
             tgt_batch = batch["tgt"].to(self.device)
@@ -75,42 +49,32 @@ class LLMTrainer:
 
             logits = self.model(src_batch, tgt_batch, causal_mask, padding_mask)
             loss = self.criterion(logits.view(-1, self.dataset.tgt_vocab_size), label.view(-1))
-            batch_loss = loss.item()
-            total_loss += batch_loss
-            running_avg = total_loss / step
-
-            print(
-                f"[Epoch] step {step:03d}/{num_batches:03d} | loss: {batch_loss:.4f} | running avg: {running_avg:.4f}"
-            )
+            total_loss += loss.item()
 
             # Backward pass and optimization
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
 
-        return total_loss / num_batches
+        return total_loss / len(loader)
 
-    def fit(self, train_loader, val_loader, start_epoch: int = None):
+    def fit(self, train_loader, val_loader):
         """Train the model for a specified number of epochs.
 
         Args:
             train_loader (torch.utils.data.DataLoader): DataLoader for training data.
             val_loader (torch.utils.data.DataLoader): DataLoader for validation data.
-            start_epoch (int | None): Epoch index to resume from. If None, starts at 0.
         """
         # TODO: Average  meter
-        start_epoch = self.current_epoch if start_epoch is None else start_epoch
         num_epochs = self.config.training.num_epochs
-
-        for epoch in range(start_epoch, num_epochs):
+        for epoch in range(num_epochs):
             train_loss = self._train_epoch(train_loader)
             self.greedy_decode(val_loader)
             # validation_loss = self.evaluate(val_loader)
-            epoch_index = epoch + 1
-            print(f"Epoch [{epoch_index}/{num_epochs}], Loss: {train_loss:.4f}")
+            print(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {train_loss:.4f}")
+            # print(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {validation_loss:.4f}")
 
-            self.current_epoch = epoch_index
-            self.save_checkpoint(epoch_index, self.config.training.checkpoint_dir)
+        # TODO save model
 
     @torch.no_grad()
     def evaluate(self, val_loader):
@@ -126,7 +90,9 @@ class LLMTrainer:
             causal_mask = batch["causal_mask"].to(self.device)
 
             logits = self.model(src_batch, tgt_batch, causal_mask, padding_mask)
-            val_loss += self.criterion(logits.view(-1, self.dataset.tgt_vocab_size), label.view(-1)).item()
+            val_loss += self.criterion(
+                logits.view(-1, self.dataset.tgt_vocab_size), label.view(-1)
+            ).item()
         return val_loss / len(val_loader)
 
     @torch.no_grad()
@@ -152,7 +118,12 @@ class LLMTrainer:
             # get encoder out
             enc_out = self.model.encoderblock(src, src_mask)  # (b=1, seq_len, emb_dim)
 
-            dec_in = torch.empty(1, 1).fill_(self.dataset.tgt_tokenizer.start_token_id).type_as(src).to(self.device)
+            dec_in = (
+                torch.empty(1, 1)
+                .fill_(self.dataset.tgt_tokenizer.start_token_id)
+                .type_as(src)
+                .to(self.device)
+            )
             while True:
                 if dec_in.size(1) == self.config.data.seq_len:
                     self.idstotext(src, sentence["tgt"], dec_in.squeeze(0))
@@ -162,7 +133,9 @@ class LLMTrainer:
                 causal_mask = causal_mask.unsqueeze(0)
 
                 dec_out = self.model.decoderblock(enc_out, dec_in, causal_mask, src_mask)
-                prob = self.model.projection_layer(dec_out[:, -1])  # select the recently generated output
+                prob = self.model.projection_layer(
+                    dec_out[:, -1]
+                )  # select the recently generated output
                 _, next_word = torch.max(prob, dim=1)
                 # FIXME this
                 dec_in = torch.cat(
@@ -175,7 +148,9 @@ class LLMTrainer:
 
                 if next_word == self.dataset.tgt_tokenizer.end_token_id:
                     # decode and break
-                    self.idstotext(src, sentence["tgt"], dec_in.squeeze(0))  # get rid of batch dimension
+                    self.idstotext(
+                        src, sentence["tgt"], dec_in.squeeze(0)
+                    )  # get rid of batch dimension
 
                     break
 
@@ -186,8 +161,12 @@ class LLMTrainer:
         src_text = self.dataset.src_tokenizer.tokenizer.decode(
             src.squeeze(0).cpu().numpy().tolist(), skip_special_tokens=True
         )
-        tgt_text = self.dataset.tgt_tokenizer.tokenizer.decode(tgt.cpu().numpy().tolist(), skip_special_tokens=True)
-        gen_text = self.dataset.tgt_tokenizer.tokenizer.decode(gen_ids.cpu().numpy().tolist(), skip_special_tokens=True)
+        tgt_text = self.dataset.tgt_tokenizer.tokenizer.decode(
+            tgt.cpu().numpy().tolist(), skip_special_tokens=True
+        )
+        gen_text = self.dataset.tgt_tokenizer.tokenizer.decode(
+            gen_ids.cpu().numpy().tolist(), skip_special_tokens=True
+        )
         print()
         print(f"Input Soruce text =====> {src_text}")
         print("===================================")

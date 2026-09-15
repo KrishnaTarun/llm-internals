@@ -46,8 +46,12 @@ class Seq2SeqModel(nn.Module):
         self.src_emb = Embedding(vocab_size=src_vocab_size, dmodel=d_model)
         self.tgt_emb = Embedding(vocab_size=tgt_vocab_size, dmodel=d_model)
 
-        self.enc_pos_encoding = SinCosinePositionalEncoding(d_model=d_model, dropout=dropout, max_len=seq_len)
-        self.dec_pos_encoding = SinCosinePositionalEncoding(d_model=d_model, dropout=dropout, max_len=seq_len)
+        self.enc_pos_encoding = SinCosinePositionalEncoding(
+            d_model=d_model, dropout=dropout, max_len=seq_len
+        )
+        self.dec_pos_encoding = SinCosinePositionalEncoding(
+            d_model=d_model, dropout=dropout, max_len=seq_len
+        )
         self.projection_layer = ProjectionLayer(d_model=d_model, vocab_size=tgt_vocab_size)
 
         self.init_parameters()

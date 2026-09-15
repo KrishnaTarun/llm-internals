@@ -10,14 +10,13 @@ import yaml
 class ModelConfig:
     """Model parameters"""
 
-    model_type: str = "Seq2Seq"  # task_type
+    model_type: str = "Seq2Seq"
     d_model: int = 128
     dff: int = 512
     num_heads: int = 8
     enc_num_layers: int = 2
     dec_num_layers: int = 1
     dropout: float = 0.1
-    output_dir: str = "output"
 
 
 @dataclass
@@ -39,8 +38,6 @@ class TrainingConfig:
     weight_decay: float = 0.0001
     warmup_steps: int = 4000
     seed: int = 42
-    checkpoint_dir: str = "output/checkpoints"  # for save model
-    resume_from: str = "output/checkpoints/Seq2Seq/model.pt"  # model path
 
 
 @dataclass

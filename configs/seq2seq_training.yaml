@@ -1,11 +1,14 @@
 data:
     # train_val_split:
-    tokenizer_dir: "dataset_artifacts/translation"
+    src_vocab_size: 100
+    tgt_vocab_size: 100
+    src_pad_idx: 0
+    tgt_pad_idx: 0
 
 model:
-    model_type: "Seq2Seq"
-    d_model: 64
-    dff: 256
+
+    d_model: 128
+    dff: 512
     num_heads: 8
     seq_len: 100
     enc_num_layers: 2
@@ -14,6 +17,6 @@ model:
 
 training:
 
-    batch_size: 64
-    num_epochs: 10
-    learning_rate: 0.001
+     batch_size: 10
+     num_epochs: 10
+     learning_rate: 0.001

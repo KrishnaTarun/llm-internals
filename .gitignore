@@ -25,6 +25,3 @@ dist/
 
 #test folders for time being
 tests/
-
-#checkpoints
-*.pt

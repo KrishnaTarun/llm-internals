@@ -68,7 +68,9 @@ class TransformerDecoderBlock(nn.Module):
         """
         super().__init__()
 
-        self.layers = nn.ModuleList([DecoderLayer(dmodel, dff, num_heads, dropout) for _ in range(num_layers)])
+        self.layers = nn.ModuleList(
+            [DecoderLayer(dmodel, dff, num_heads, dropout) for _ in range(num_layers)]
+        )
 
     def forward(self, x, enc_output, causal_mask=None, padding_mask=None):  # noqa: D102
         for layer in self.layers:
@@ -93,7 +95,9 @@ if __name__ == "__main__":
     look_ahead_mask = (
         torch.tril(torch.ones((seq_length, seq_length))).unsqueeze(0).unsqueeze(0)
     )  # (1, 1, seq_length, seq_length)
-    padding_mask_tgt = (tgt != tgt_pad_ids).int().unsqueeze(1).unsqueeze(2)  # (batch, 1, 1, seq_length)
+    padding_mask_tgt = (
+        (tgt != tgt_pad_ids).int().unsqueeze(1).unsqueeze(2)
+    )  # (batch, 1, 1, seq_length)
 
     print("Padding mask shape:", padding_mask)
     print("Look-ahead mask shape:", look_ahead_mask)
