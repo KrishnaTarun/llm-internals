@@ -3,11 +3,14 @@
 roadmap/
 
 # Python bytecode and caches
+**/__pycache__/
 __pycache__/
 *.py[cod]
 *.pyc
 *.pyo
 *.pyd
+*.cpython-*.pyc
+*.cpython-*.pyd
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

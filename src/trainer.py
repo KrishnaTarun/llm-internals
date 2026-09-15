@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import torch
 from torch import nn
@@ -31,6 +33,7 @@ class LLMTrainer:
         """Persist model and optimizer state using the shared utility helper."""
         if checkpoint_path is None:
             raise ValueError("No path provided")
+        checkpoint_path = os.path.join(checkpoint_path, self.config.model.model_type)
         self.current_epoch = epoch
         return save_checkpoint(
             self.model,
