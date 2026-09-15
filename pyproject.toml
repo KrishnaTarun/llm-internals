@@ -1,3 +1,7 @@
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
 [project]
 name = "model-components"
 version = "0.1.0"
@@ -11,6 +15,7 @@ requires-python = ">=3.11"
 dependencies = [
     "dacite>=1.9.2",
     "datasets>=5.0.1",
+    "mlflow>=3.16.0",
     "numpy<2",
     "tokenizers>=0.23.2",
     "torch==2.2.2",
@@ -46,10 +51,6 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = ["ALL"]
-
-[build-system]
-requires = ["uv_build>=0.12.5,<0.13.0"]
-build-backend = "uv_build"
 
 [dependency-groups]
 dev = [

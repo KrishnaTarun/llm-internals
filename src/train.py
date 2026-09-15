@@ -27,7 +27,11 @@ def train(config: Config):
     model = get_model(config, src_vocab=src_vocab_size, tgt_vocab=tgt_vocab_size)
 
     trainer = LLMTrainer(model, config, dataset)
-    trainer.fit(train_loader, val_loader)
+
+    if config.training.resume_from:
+        trainer.load_checkpoint(config.training.resume_from)
+
+    trainer.fit(train_loader, val_loader, start_epoch=trainer.current_epoch)
 
 
 if __name__ == "__main__":

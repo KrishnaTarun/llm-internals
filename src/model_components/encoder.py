@@ -45,9 +45,7 @@ class TransformerEncoderBlock(nn.Module):
     ) -> None:
         """Initialize a stack containing ``num_layers`` encoder layers."""
         super().__init__()
-        self.layers = nn.ModuleList(
-            [EncoderLayer(dmodel, dff, num_heads, dropout) for _ in range(num_layers)]
-        )
+        self.layers = nn.ModuleList([EncoderLayer(dmodel, dff, num_heads, dropout) for _ in range(num_layers)])
 
     def forward(self, x, padding_mask=None):
         """Apply every encoder layer to the input tensor."""
