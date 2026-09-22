@@ -1,5 +1,6 @@
+import os
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Tuple
 
 import torch
 from datasets import load_dataset
@@ -9,17 +10,15 @@ from tokenizers.normalizers import Lowercase
 from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.processors import TemplateProcessing
 from tokenizers.trainers import WordLevelTrainer
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 
 from tokenization import GPTSimpleTokenizer
-
 
 def flatten(x):
     result = []
     for item in x:
         result.extend(item.split())
     return result
-
 
 def get_sentences(ds, lang=None):
     """Yield translations or sentences in the requested language."""
@@ -39,7 +38,6 @@ def truncation_and_padding(tokenizer, seq_len, pad_token="[PAD]"):
         pad_id=tokenizer.tokenizer.token_to_id(pad_token),
         pad_token=pad_token,
     )
-
 
 class TranslationTokenizer:
     """Build or load a WordLevel tokenizer for a dataset."""
@@ -88,9 +86,9 @@ class TranslationTokenizer:
 
         return tokenizer
 
-
 # Fix me need to tokenize on the Trainset only
 class TranslationDataset(Dataset):
+    
     """Prepare tokenized source and target examples for sequence-to-sequence training."""
 
     def __init__(self, dataset, src_lang="en", tgt_lang="nl", seq_len=100):
@@ -172,35 +170,80 @@ class TranslationDataset(Dataset):
             "causal_mask": causal_mask,
         }
 
-
 class GPTTextDataset(Dataset):
-    def __init__(self, text: List[str], tokenizer: GPTSimpleTokenizer, seq_len: int, stride: int):
-        self.in_ids = []  # input ids
-        self.ta_ids = []  # tagets/labels
+
+    def __init__(self, text: List[str], tokenizer:GPTSimpleTokenizer, seq_len:int, stride:int):
+        self.in_ids = [] # input ids
+        self.ta_ids = [] # tagets/labels
 
         text = flatten(text)
         # one thing to note here: this loop will make sure every
-        # block fo texts id of length seq_len, so no
-        # post-porcesscing required to append [PAD] tokens
+        # block fo texts id of length seq_len, so no 
+        # post-porcesscing required to append [PAD] tokens 
         # or "<|endoftext|>" tokens. "<|endoftext|>" might be used
         # if concatinating mulitple documents, Also, in GPT
         # there is not [PAD] tokens. "<|endoftext|>" is cosnidered for
-        # padding
-        for i in range(0, len(text) - seq_len, stride):
-            in_seq = text[i : i + seq_len]
-            ta_seq = text[i + 1 : i + seq_len + 1]  # shift by 1
+        # padding  
+        for i in range(0, len(text)-seq_len, stride):
+            in_seq = text[i: i+seq_len]
+            ta_seq = text[i + 1: i+ seq_len + 1] # shift by 1
 
-            self.in_ids.append(torch.tensor(tokenizer.tokenizer.encode(" ".join(in_seq)).ids, dtype=torch.long))
-            self.ta_ids.append(torch.tensor(tokenizer.tokenizer.encode(" ".join(ta_seq)).ids, dtype=torch.long))
+            self.in_ids.append(torch.tensor(tokenizer.tokenizer.encode(' '.join(in_seq)).ids, dtype= torch.long))
+            self.ta_ids.append(torch.tensor(tokenizer.tokenizer.encode(' '.join(ta_seq)).ids, dtype= torch.long))
 
     def __len__(self):
-        return len(self.in_ids)
 
+        return len(self.in_ids)
+    
     def __getitem__(self, idx):
+
         return self.in_ids[idx], self.ta_ids[idx]
+
+class GPTDataModule:
+    "handles  everything"
+
+    def __init__(self,
+                 seq_len: int = 512,
+                 stride: int = 256,
+                 batch_size: int = 16,
+                 num_workers: int = 4,
+            
+    ):
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        
+        self.ds = load_dataset("Salesforce/wikitext", name="wikitext-2-raw-v1")
+        self.tokenizer = GPTSimpleTokenizer(self.ds["train"]["text"], "gpt.json")
+
+        self.train_dataset = GPTTextDataset(self.ds["train"]["text"], self.tokenizer, seq_len, stride)
+        self.val_dataset = GPTTextDataset(self.ds["val"]["text"], self.tokenizer, seq_len, stride)
+
+    def train_dataloader(self) -> DataLoader:
+        """Create training DataLoader."""
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+            pin_memory=True
+        )
+    
+    def val_dataloader(self) -> DataLoader:
+        """Create validation DataLoader."""
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            pin_memory=True
+        )
+    
+
+
 
 
 if __name__ == "__main__":
+
     dataset = load_dataset("Salesforce/wikitext", name="wikitext-2-raw-v1", split="train")
     tokenizer = GPTSimpleTokenizer(dataset["text"], "gpt.json")
     GPTTextDataset(dataset["text"], tokenizer, seq_len=100, stride=10)
@@ -213,7 +256,7 @@ if __name__ == "__main__":
     #     if i ==10:
     #         break
 
-    # Translation dataset
+    #Translation dataset
     # num_rows = 38652
     # dataset = load_dataset("Helsinki-NLP/opus_books", "en-nl", split="train")
     # # a = get_sentences(dataset, "en")
