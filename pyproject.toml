@@ -54,6 +54,7 @@ convention = "google"
 
 [dependency-groups]
 dev = [
+    "bpython>=0.26",
     "pre-commit>=4.6.2",
     "ruff>=0.16.7",
 ]

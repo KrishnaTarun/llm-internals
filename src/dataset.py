@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 
 import torch
 from datasets import load_dataset
@@ -9,6 +10,15 @@ from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.processors import TemplateProcessing
 from tokenizers.trainers import WordLevelTrainer
 from torch.utils.data import Dataset
+
+from tokenization import GPTSimpleTokenizer
+
+
+def flatten(x):
+    result = []
+    for item in x:
+        result.extend(item.split())
+    return result
 
 
 def get_sentences(ds, lang=None):
@@ -31,7 +41,7 @@ def truncation_and_padding(tokenizer, seq_len, pad_token="[PAD]"):
     )
 
 
-class BuildTokenizer:
+class TranslationTokenizer:
     """Build or load a WordLevel tokenizer for a dataset."""
 
     def __init__(self, dataset: iter, tokenizer_path: str):
@@ -79,6 +89,7 @@ class BuildTokenizer:
         return tokenizer
 
 
+# Fix me need to tokenize on the Trainset only
 class TranslationDataset(Dataset):
     """Prepare tokenized source and target examples for sequence-to-sequence training."""
 
@@ -87,10 +98,10 @@ class TranslationDataset(Dataset):
         self.dataset = dataset
 
         # hard code tokenizer_name
-        self.src_tokenizer = BuildTokenizer(get_sentences(dataset, src_lang), "translation_en_tokenizer.json")
+        self.src_tokenizer = TranslationTokenizer(get_sentences(dataset, src_lang), "translation_en_tokenizer.json")
         truncation_and_padding(self.src_tokenizer, seq_len)
 
-        self.tgt_tokenizer = BuildTokenizer(get_sentences(dataset, tgt_lang), "translation_nl_tokenizer.json")
+        self.tgt_tokenizer = TranslationTokenizer(get_sentences(dataset, tgt_lang), "translation_nl_tokenizer.json")
         # Don't intiate truncationa nd padding for decoder will be clear
         # in later partd
         # truncation_and_padding(self.tgt_tokenizer, seq_len)
@@ -162,42 +173,82 @@ class TranslationDataset(Dataset):
         }
 
 
+class GPTTextDataset(Dataset):
+    def __init__(self, text: List[str], tokenizer: GPTSimpleTokenizer, seq_len: int, stride: int):
+        self.in_ids = []  # input ids
+        self.ta_ids = []  # tagets/labels
+
+        text = flatten(text)
+        # one thing to note here: this loop will make sure every
+        # block fo texts id of length seq_len, so no
+        # post-porcesscing required to append [PAD] tokens
+        # or "<|endoftext|>" tokens. "<|endoftext|>" might be used
+        # if concatinating mulitple documents, Also, in GPT
+        # there is not [PAD] tokens. "<|endoftext|>" is cosnidered for
+        # padding
+        for i in range(0, len(text) - seq_len, stride):
+            in_seq = text[i : i + seq_len]
+            ta_seq = text[i + 1 : i + seq_len + 1]  # shift by 1
+
+            self.in_ids.append(torch.tensor(tokenizer.tokenizer.encode(" ".join(in_seq)).ids, dtype=torch.long))
+            self.ta_ids.append(torch.tensor(tokenizer.tokenizer.encode(" ".join(ta_seq)).ids, dtype=torch.long))
+
+    def __len__(self):
+        return len(self.in_ids)
+
+    def __getitem__(self, idx):
+        return self.in_ids[idx], self.ta_ids[idx]
+
+
 if __name__ == "__main__":
+    dataset = load_dataset("Salesforce/wikitext", name="wikitext-2-raw-v1", split="train")
+    tokenizer = GPTSimpleTokenizer(dataset["text"], "gpt.json")
+    GPTTextDataset(dataset["text"], tokenizer, seq_len=100, stride=10)
+    # print(tokenizer.tokenizer.encode_batch(dataset["text"[:10]]))
+    # print(dataset[2])
+
+    # for i, t in enumerate(dataset["text"]):
+    #     print(i)
+
+    #     if i ==10:
+    #         break
+
+    # Translation dataset
     # num_rows = 38652
-    dataset = load_dataset("Helsinki-NLP/opus_books", "en-nl", split="train")
-    # a = get_sentences(dataset, "en")
+    # dataset = load_dataset("Helsinki-NLP/opus_books", "en-nl", split="train")
+    # # a = get_sentences(dataset, "en")
 
-    # seems to work fine,
-    a = TranslationDataset(dataset, src_lang="en", tgt_lang="nl", seq_len=100)
-    sample = a[5]
-    assert sample["src"].shape == (100,)
-    assert sample["tgt"].shape == (100,)
-    print("TranslationDataset works:", sample["src"].shape, sample["tgt"].shape)
-    print(
-        "Source:",
-        a.src_tokenizer.tokenizer.decode(sample["src"].tolist(), skip_special_tokens=False),
-    )
-    print(
-        "Target:",
-        a.tgt_tokenizer.tokenizer.decode(sample["tgt"].tolist(), skip_special_tokens=False),
-    )
-    print(
-        "Target Label",
-        a.tgt_tokenizer.tokenizer.decode(sample["label"].tolist(), skip_special_tokens=False),
-    )
-    # # print(list(a))
-
-    # tokenizer = BuildTokenizer(a, "translation_en-nl_tokenizer.json")
-    # tokenizer.tokenizer.enable_truncation(max_length=10)
-    # tokenizer.tokenizer.enable_padding(
-    #     length=10, pad_id=tokenizer.tokenizer.token_to_id("[PAD]"), pad_token="[PAD]"
+    # # seems to work fine,
+    # a = TranslationDataset(dataset, src_lang="en", tgt_lang="nl", seq_len=100)
+    # sample = a[5]
+    # assert sample["src"].shape == (100,)
+    # assert sample["tgt"].shape == (100,)
+    # print("TranslationDataset works:", sample["src"].shape, sample["tgt"].shape)
+    # print(
+    #     "Source:",
+    #     a.src_tokenizer.tokenizer.decode(sample["src"].tolist(), skip_special_tokens=False),
     # )
-    # print(tokenizer.tokenizer.encode("Let's test this tokenizer...").tokens)
-    # # batch_sentences = [
-    # #     "But what about second breakfast?",
-    # #     "Don't think he knows about second breakfast, Pip.",
-    # #     "What about elevensies?",
-    # # ]
-    # encoded_input = tokenizer.tokenizer.encode(batch_sentences)
-    # print(encoded_input.tokens)
+    # print(
+    #     "Target:",
+    #     a.tgt_tokenizer.tokenizer.decode(sample["tgt"].tolist(), skip_special_tokens=False),
+    # )
+    # print(
+    #     "Target Label",
+    #     a.tgt_tokenizer.tokenizer.decode(sample["label"].tolist(), skip_special_tokens=False),
+    # )
+    # # # print(list(a))
+
+    # # tokenizer = TranslationTokenizer(a, "translation_en-nl_tokenizer.json")
+    # # tokenizer.tokenizer.enable_truncation(max_length=10)
+    # # tokenizer.tokenizer.enable_padding(
+    # #     length=10, pad_id=tokenizer.tokenizer.token_to_id("[PAD]"), pad_token="[PAD]"
+    # # )
+    # # print(tokenizer.tokenizer.encode("Let's test this tokenizer...").tokens)
+    # # # batch_sentences = [
+    # # #     "But what about second breakfast?",
+    # # #     "Don't think he knows about second breakfast, Pip.",
+    # # #     "What about elevensies?",
+    # # # ]
+    # # encoded_input = tokenizer.tokenizer.encode(batch_sentences)
+    # # print(encoded_input.tokens)
     # print(dataset)

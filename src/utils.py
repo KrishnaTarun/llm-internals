@@ -72,3 +72,4 @@ def load_checkpoint(model: nn.Module, optimizer: torch.optim.Optimizer, checkpoi
     epoch = int(checkpoint.get("epoch", 0))
     print(f"Loaded checkpoint from: {checkpoint_path} (epoch {epoch})")
     return epoch
+
