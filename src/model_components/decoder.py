@@ -50,10 +50,12 @@ class DecoderLayer(nn.Module):
 # this is GPT-2 style decoder block whihc is sligtly different from
 # Seq2Seq based decoder model i.e, it doesn't have cross attention
 # its similar to encoder block but with causal masking.
-class DummyDecoderGPT(nn.Module):
+class DecoderGPT(nn.Module):
     """This class builds a single decoder layer"""
 
-    def __init__(self, dmodel: int, dff: int, num_heads: int, dropout: float = 0.1) -> None:
+    MODEL_TYPE = "GPTstyle"
+
+    def __init__(self, dmodel: int, dff: int, num_heads: int, seq_len:int, dropout: float = 0.1) -> None:
         """Args:
 
         dmodel: Embedding dimension
@@ -61,28 +63,37 @@ class DummyDecoderGPT(nn.Module):
         dropout: Dropout rate
         """
         super().__init__()
+
+        self.layer_norm1 = nn.LayerNorm(dmodel)
+        self.layer_norm2 = nn.LayerNorm(dmodel)
     
         # Causal Attention
         self.mha = Attention(dmodel, num_heads, dropout)
         
         self.ffn = FeedForward(dmodel, dff, dropout)
 
-        self.rc1 = ResidualConnection(dmodel, dropout)
-        self.rc2 = ResidualConnection(dmodel, dropout)
+        self.rc1 = ResidualConnection(dmodel, dropout, model_type=self.MODEL_TYPE)
+        self.rc2 = ResidualConnection(dmodel, dropout, model_type=self.MODEL_TYPE)
+
+        # lets create a causal mask here unlike in Seq2seq model
+        # where for each iteration from dataloader we had to 
+        # create padding mask aswell as causal mask * padding mask
+        self.register_buffer("mask", torch.tril(torch.ones((seq_len, seq_len))).unsqueeze(0))  # (1, seq_length, seq_length))
 
 
-    def forward(self, x, look_ahead_mask=None):  # noqa: D102
+    def forward(self, x):  # noqa: D102
+        # Applye layer norm first
+        residual = x
+        x = self.layer_norm(x)
         # Masked multi-head attention (self-attention)
-        mha = self.mha(x, x, x, look_ahead_mask)
-        x = self.rc1(x, mha)
+        x = self.mha(x, x, x, self.mask)
+        x = self.rc1(residual, x)
 
-        # Multi-head attention (encoder-decoder attention)
-        mha = self.mha(x, enc_output, enc_output, padding_mask)
-        x = self.rc2(x, mha)
+        residual = x
+        x = self.layer_norm2(x)
+        x = self.ffn(x)
+        x = self.rc2(residual,x)
 
-        # Feed-forward network
-        ffn_output = self.ffn(x)
-        x = self.rc3(x, ffn_output)
 
         return x
 
