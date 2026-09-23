@@ -176,20 +176,30 @@ class GPTTextDataset(Dataset):
         self.in_ids = [] # input ids
         self.ta_ids = [] # tagets/labels
 
-        text = flatten(text)
-        # one thing to note here: this loop will make sure every
+        # converting it into a one large text
+        # FIXME
+        text = ' '.join(flatten(text))
+        tokens = tokenizer.tokenizer.encode(text).ids
+
+        # one thing to NOTE here: this loop will make sure every
         # block fo texts id of length seq_len, so no 
         # post-porcesscing required to append [PAD] tokens 
         # or "<|endoftext|>" tokens. "<|endoftext|>" might be used
         # if concatinating mulitple documents, Also, in GPT
         # there is not [PAD] tokens. "<|endoftext|>" is cosnidered for
         # padding  
-        for i in range(0, len(text)-seq_len, stride):
-            in_seq = text[i: i+seq_len]
-            ta_seq = text[i + 1: i+ seq_len + 1] # shift by 1
+        for i in range(0, len(tokens)-seq_len, stride):
+            in_seq = tokens[i: i+seq_len]
+            ta_seq = tokens[i + 1: i+ seq_len + 1] # shift by 1
 
-            self.in_ids.append(torch.tensor(tokenizer.tokenizer.encode(' '.join(in_seq)).ids, dtype= torch.long))
-            self.ta_ids.append(torch.tensor(tokenizer.tokenizer.encode(' '.join(ta_seq)).ids, dtype= torch.long))
+            #drop the sample
+            if len(in_seq)!=512 and len(ta_seq)!=512:
+                print("dropping sample")
+                continue 
+            
+
+            self.in_ids.append(torch.tensor(in_seq, dtype= torch.long))
+            self.ta_ids.append(torch.tensor(ta_seq, dtype= torch.long))
 
     def __len__(self):
 
@@ -206,17 +216,18 @@ class GPTDataModule:
                  seq_len: int = 512,
                  stride: int = 256,
                  batch_size: int = 16,
-                 num_workers: int = 4,
+                 num_workers: int = 2,
             
     ):
         self.batch_size = batch_size
         self.num_workers = num_workers
-        
+
+        # Lets hard code the dataset
         self.ds = load_dataset("Salesforce/wikitext", name="wikitext-2-raw-v1")
         self.tokenizer = GPTSimpleTokenizer(self.ds["train"]["text"], "gpt.json")
 
         self.train_dataset = GPTTextDataset(self.ds["train"]["text"], self.tokenizer, seq_len, stride)
-        self.val_dataset = GPTTextDataset(self.ds["val"]["text"], self.tokenizer, seq_len, stride)
+        self.val_dataset = GPTTextDataset(self.ds["validation"]["text"], self.tokenizer, seq_len, stride)
 
     def train_dataloader(self) -> DataLoader:
         """Create training DataLoader."""
@@ -238,15 +249,17 @@ class GPTDataModule:
             pin_memory=True
         )
     
-
-
-
-
 if __name__ == "__main__":
 
-    dataset = load_dataset("Salesforce/wikitext", name="wikitext-2-raw-v1", split="train")
-    tokenizer = GPTSimpleTokenizer(dataset["text"], "gpt.json")
-    GPTTextDataset(dataset["text"], tokenizer, seq_len=100, stride=10)
+    data_module = GPTDataModule()
+    train_loader = data_module.train_dataloader()
+    for batch, (in_, ta_) in enumerate(train_loader):
+        # print(batch)
+        print(batch)
+
+    # dataset = load_dataset("Salesforce/wikitext", name="wikitext-2-raw-v1", split="train")
+    # tokenizer = GPTSimpleTokenizer(dataset["text"], "gpt.json")
+    # GPTTextDataset(dataset["text"], tokenizer, seq_len=100, stride=10)
     # print(tokenizer.tokenizer.encode_batch(dataset["text"[:10]]))
     # print(dataset[2])
 
