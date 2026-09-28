@@ -43,12 +43,15 @@ class FeedForward(nn.Module):
 class ResidualConnection(nn.Module):
     """Apply dropout, residual addition, and layer normalization."""
 
-    def __init__(self, dmodel: int, dropout: float = 0.1) -> None:
+    def __init__(self, dmodel: int, dropout: float = 0.1, model_type: str = "Seq2Seq") -> None:
         """Initialize dropout and layer normalization."""
         super().__init__()
 
         self.dropout = nn.Dropout(dropout)
-        self.layer_norm = nn.LayerNorm(dmodel)
+        self.layer_norm = nn.Identity()
+        
+        if model_type=="Seq2Seq":
+            self.layer_norm = nn.LayerNorm(dmodel)
 
     def forward(self, x, sublayer_output):
         """Combine an input with a sublayer output."""

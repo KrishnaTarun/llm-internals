@@ -1,10 +1,13 @@
+from re import M
+
 import torch
 from torch import nn
 
 from model_components.attention import Attention
 from model_components.sub_blocks import FeedForward, ResidualConnection
 
-
+# this decoder block mirrors whats implemented in
+# Attention is all you need Decoder Architecture
 class DecoderLayer(nn.Module):
     """This class builds a single decoder layer"""
 
@@ -45,6 +48,56 @@ class DecoderLayer(nn.Module):
         x = self.rc3(x, ffn_output)
 
         return x
+    
+# this is GPT-2 style decoder block whihc is sligtly different from
+# Seq2Seq based decoder model i.e, it doesn't have cross attention
+# its similar to encoder block but with causal masking.
+class DecoderGPT(nn.Module):
+    """This class builds a single decoder layer"""
+
+    MODEL_TYPE = "GPTstyle"
+
+    def __init__(self, dmodel: int, dff: int, num_heads: int, seq_len:int, dropout: float = 0.1) -> None:
+        """Args:
+
+        dmodel: Embedding dimension
+        num_heads: Number of attention heads
+        dropout: Dropout rate
+        """
+        super().__init__()
+
+        self.layer_norm1 = nn.LayerNorm(dmodel)
+        self.layer_norm2 = nn.LayerNorm(dmodel)
+    
+        # Causal Attention
+        self.mha = Attention(dmodel, num_heads, dropout)
+        
+        self.ffn = FeedForward(dmodel, dff, dropout)
+
+        self.rc1 = ResidualConnection(dmodel, dropout, model_type=self.MODEL_TYPE)
+        self.rc2 = ResidualConnection(dmodel, dropout, model_type=self.MODEL_TYPE)
+
+        # lets create a causal mask here unlike in Seq2seq model
+        # where for each iteration from dataloader we had to 
+        # create padding mask as well as (causal mask * padding mask)
+        self.register_buffer("mask", torch.tril(torch.ones((seq_len, seq_len))).unsqueeze(0))  # (1, seq_length, seq_length))
+
+
+    def forward(self, x):  # noqa: D102
+        # Applye layer norm first
+        residual = x
+        x = self.layer_norm1(x)
+        # Masked multi-head attention (self-attention)
+        seq_len = x.size(1)
+        x = self.mha(x, x, x, self.mask[:, :seq_len, :seq_len])
+        x = self.rc1(residual, x)
+
+        residual = x
+        x = self.layer_norm2(x)
+        x = self.ffn(x)
+        x = self.rc2(residual,x)
+
+        return x
 
 
 class TransformerDecoderBlock(nn.Module):
@@ -57,6 +110,8 @@ class TransformerDecoderBlock(nn.Module):
         dff: int,
         num_heads: int,
         dropout: float = 0.1,
+        seq_len: int = None,
+        model_type: str = "Seq2Seq",
     ) -> None:
         """Args:
 
@@ -65,13 +120,25 @@ class TransformerDecoderBlock(nn.Module):
         dff: Dimensions in feedforward layer
         num_heads: Number of attention heads
         dropout: Dropout rate
+        model_type: Decoder architecture, either ``"Seq2Seq"`` or ``"GPTstyle"``
+        seq_len: Maximum sequence length, required for ``"GPTstyle"``
         """
         super().__init__()
 
-        self.layers = nn.ModuleList([DecoderLayer(dmodel, dff, num_heads, dropout) for _ in range(num_layers)])
+        self.decoder_module = DecoderGPT(dmodel, dff, num_heads, seq_len, dropout)
 
-    def forward(self, x, enc_output, causal_mask=None, padding_mask=None):  # noqa: D102
+        if model_type == "Seq2Seq":
+            
+            self.decoder_module = DecoderLayer(dmodel, dff, num_heads, dropout)
+        
+        self.layers = nn.ModuleList([self.decoder_module for _ in range(num_layers)])
+
+    def forward(self, x, enc_output=None, causal_mask=None, padding_mask=None):  # noqa: D102
         for layer in self.layers:
+
+            if enc_output==None: #gpt style
+                x = layer(x)
+                continue
             x = layer(x, enc_output, causal_mask, padding_mask)
         return x
 

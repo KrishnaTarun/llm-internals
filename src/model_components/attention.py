@@ -58,7 +58,8 @@ class Attention(nn.Module):
         if mask is not None:
             scores = scores.masked_fill(mask == 0, float("-inf"))
 
-        attention_weights = F.softmax(scores, dim=-1)
+        attention_weights = self.dropout(F.softmax(scores, dim=-1))
+
 
         # scaled dot product
         return torch.matmul(attention_weights, value)

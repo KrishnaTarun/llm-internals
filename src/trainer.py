@@ -10,24 +10,26 @@ from utils import load_checkpoint, save_checkpoint
 
 
 class LLMTrainer:
-    """Train and evaluate a sequence-to-sequence language model."""
+    """Train and evaluate the configured language-model architecture."""
 
-    def __init__(self, model: nn.Module, config: Config, dataset: Dataset):
+    def __init__(self, model: nn.Module, config: Config):
         """Initialize the model, loss function, optimizer, and training dataset."""
         self.config = config
-        self.model = model.to(config.training.device)
         self.device = config.training.device
-        self.dataset = dataset
+        self.model = model.to(self.device)
+        # self.dataset = dataset #Needs to be fixed
         self.current_epoch = 0
+        self.vocab_size = config.data.vocab_size
 
-        self.criterion = nn.CrossEntropyLoss(ignore_index=self.dataset.tgt_pad_id, label_smoothing=0.1)
+        #FIXME    
+        # ignore_index = self.dataset.tgt_pad_id if config.model.model_type == "Seq2Seq" else -100
+        # self.criterion = nn.CrossEntropyLoss(ignore_index=ignore_index, label_smoothing=0.1)
+        self.criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
         self.optimizer = torch.optim.Adam(
             model.parameters(),
             lr=config.training.learning_rate,
             weight_decay=config.training.weight_decay,
         )
-
-        self.device = config.training.device
 
     def save_checkpoint(self, epoch: int, checkpoint_path: str | None = None):
         """Persist model and optimizer state using the shared utility helper."""
@@ -55,6 +57,24 @@ class LLMTrainer:
         )
         return self.current_epoch
 
+    def _batch_loss(self, batch):
+        """Run one model-specific batch and return its next-token loss."""
+        if self.config.model.model_type == "GPTstyle":
+            input_ids, labels = (tensor.to(self.device) for tensor in batch)
+            logits = self.model(input_ids)
+            # vocab_size = self.dataset.vocab_size
+        else:
+            src_batch = batch["src"].to(self.device)
+            tgt_batch = batch["tgt"].to(self.device)
+            labels = batch["label"].to(self.device)
+            padding_mask = batch["src_mask"].to(self.device)
+            causal_mask = batch["causal_mask"].to(self.device)
+            logits = self.model(src_batch, tgt_batch, causal_mask, padding_mask)
+            #FIXME
+            # vocab_size = self.dataset.tgt_vocab_size
+
+        return self.criterion(logits.reshape(-1, self.vocab_size), labels.reshape(-1))
+
     def _train_epoch(self, loader):
         """Perform a single epoch fo training.
 
@@ -69,15 +89,7 @@ class LLMTrainer:
         num_batches = len(loader)
 
         for step, batch in enumerate(loader, start=1):
-            # FIXME write assertions
-            src_batch = batch["src"].to(self.device)
-            tgt_batch = batch["tgt"].to(self.device)
-            label = batch["label"].to(self.device)
-            padding_mask = batch["src_mask"].to(self.device)
-            causal_mask = batch["causal_mask"].to(self.device)
-
-            logits = self.model(src_batch, tgt_batch, causal_mask, padding_mask)
-            loss = self.criterion(logits.view(-1, self.dataset.tgt_vocab_size), label.view(-1))
+            loss = self._batch_loss(batch)
             batch_loss = loss.item()
             total_loss += batch_loss
             running_avg = total_loss / step
@@ -107,11 +119,14 @@ class LLMTrainer:
 
         for epoch in range(start_epoch, num_epochs):
             train_loss = self._train_epoch(train_loader)
-            self.greedy_decode(val_loader)
-            # validation_loss = self.evaluate(val_loader)
+            validation_loss = self.evaluate(val_loader)
+            # if self.config.model.model_type == "Seq2Seq":
+            #     self.greedy_decode(val_loader)
             epoch_index = epoch + 1
             print(f"Epoch [{epoch_index}/{num_epochs}], Loss: {train_loss:.4f}")
+            print(f"Epoch [{epoch_index}/{num_epochs}], Loss: {validation_loss:.4f}")
 
+            # At the moment no saving model after every epoch
             self.current_epoch = epoch_index
             self.save_checkpoint(epoch_index, self.config.training.checkpoint_dir)
 
@@ -122,14 +137,7 @@ class LLMTrainer:
         val_loss = 0.0
 
         for batch in val_loader:
-            src_batch = batch["src"].to(self.device)
-            tgt_batch = batch["tgt"].to(self.device)
-            label = batch["label"].to(self.device)
-            padding_mask = batch["src_mask"].to(self.device)
-            causal_mask = batch["causal_mask"].to(self.device)
-
-            logits = self.model(src_batch, tgt_batch, causal_mask, padding_mask)
-            val_loss += self.criterion(logits.view(-1, self.dataset.tgt_vocab_size), label.view(-1)).item()
+            val_loss += self._batch_loss(batch).item()
         return val_loss / len(val_loader)
 
     @torch.no_grad()

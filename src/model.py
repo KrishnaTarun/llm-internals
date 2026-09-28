@@ -10,6 +10,7 @@ from model_components import (
 
 
 class Seq2SeqModel(nn.Module):
+    
     """A sequence-to-sequence model that combines an encoder and a decoder."""
 
     def __init__(
@@ -85,3 +86,60 @@ class Seq2SeqModel(nn.Module):
         dec_out = self.decoderblock(enc_out, tgt, causal_mask, padding_mask)
 
         return self.projection_layer(dec_out)
+
+
+class GPTModel(nn.Module):
+    """A decoder-only GPT-style language model."""
+    
+
+    def __init__(
+        self,
+        n_layers_dec: int,
+        d_model: int,
+        dff: int,
+        num_heads: int,
+        dropout: float,
+        vocab_size: int,
+        seq_len: int,
+    ) -> None:
+        """Initialize token embeddings, causal decoder layers, and vocabulary projection."""
+        super().__init__()
+
+        self.seq_len = seq_len
+        self.token_emb = Embedding(vocab_size=vocab_size, dmodel=d_model)
+        self.pos_encoding = SinCosinePositionalEncoding(
+            d_model=d_model,
+            dropout=dropout,
+            max_len=seq_len,
+        )
+        self.decoder = TransformerDecoderBlock(
+            num_layers=n_layers_dec,
+            dmodel=d_model,
+            dff=dff,
+            num_heads=num_heads,
+            dropout=dropout,
+            model_type="GPTstyle",
+            seq_len=seq_len,
+        )
+        self.projection_layer = ProjectionLayer(d_model=d_model, vocab_size=vocab_size)
+
+        self.init_parameters()
+
+    def init_parameters(self) -> None:
+        """Initialize trainable weights for the model's supported layer types."""
+        for module in self.modules():
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_uniform_(module.weight)
+                if module.bias is not None:
+                    nn.init.zeros_(module.bias)
+            elif isinstance(module, nn.Embedding):
+                nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            elif isinstance(module, nn.LayerNorm):
+                nn.init.ones_(module.weight)
+                nn.init.zeros_(module.bias)
+
+    def forward(self, x):    
+        x = self.token_emb(x)
+        x = self.pos_encoding(x)
+        x = self.decoder(x)
+        return self.projection_layer(x)

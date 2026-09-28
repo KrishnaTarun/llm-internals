@@ -26,6 +26,8 @@ class DatasetConfig:
 
     tokenizer_path: str = "translation_en-nl_tokenizer.json"
     seq_len: int = 100
+    stride:int = 50
+    vocab_size = 1000
 
 
 @dataclass
