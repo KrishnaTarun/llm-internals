@@ -175,6 +175,7 @@ class GPTTextDataset(Dataset):
     def __init__(self, text: List[str], tokenizer:GPTSimpleTokenizer, seq_len:int, stride:int):
         self.in_ids = [] # input ids
         self.ta_ids = [] # tagets/labels
+        # self.vocab_size = tokenizer.tokenizer.get_vocab_size()
 
         # converting it into a one large text
         # FIXME
@@ -193,7 +194,7 @@ class GPTTextDataset(Dataset):
             ta_seq = tokens[i + 1: i+ seq_len + 1] # shift by 1
 
             #drop the sample
-            if len(in_seq)!=512 and len(ta_seq)!=512:
+            if len(in_seq)!=seq_len and len(ta_seq)!=seq_len:
                 print("dropping sample")
                 continue 
             
@@ -225,6 +226,7 @@ class GPTDataModule:
         # Lets hard code the dataset
         self.ds = load_dataset("Salesforce/wikitext", name="wikitext-2-raw-v1")
         self.tokenizer = GPTSimpleTokenizer(self.ds["train"]["text"], "gpt.json")
+        self.vocab_size = self.tokenizer.tokenizer.get_vocab_size()
 
         self.train_dataset = GPTTextDataset(self.ds["train"]["text"], self.tokenizer, seq_len, stride)
         self.val_dataset = GPTTextDataset(self.ds["validation"]["text"], self.tokenizer, seq_len, stride)

@@ -1,3 +1,5 @@
+import argparse
+
 import torch
 
 from config import Config, load_config
@@ -7,26 +9,22 @@ from utils import get_dataset, get_model
 
 # TODO: GPU check and device assignment
 def train(config: Config):
-    """Train the model based on the provided configuration.
-
-    Args:
-        config (Config): Configuration containing model, training, and data parameters.
-    """
+    """Build and train the configured model architecture."""
     # Set random seed for reproducibility
     # FIXME this properly
     torch.manual_seed(config.training.seed)
 
     # get data
     # FIXME
-    dataset, train_loader, val_loader = get_dataset(config)
-    src_vocab_size = dataset.src_vocab_size
-    tgt_vocab_size = dataset.tgt_vocab_size
+    # no need of test loader that should be isolated
+    # in standalone script like infernece.py
+    train_loader, val_loader = get_dataset(config)
 
     # Initialize the model
     # FIXME: Add support for other model types in the future
-    model = get_model(config, src_vocab=src_vocab_size, tgt_vocab=tgt_vocab_size)
+    model = get_model(config)
 
-    trainer = LLMTrainer(model, config, dataset)
+    trainer = LLMTrainer(model, config)
 
     if config.training.resume_from is not None:
         trainer.load_checkpoint(config.training.resume_from)
@@ -34,10 +32,22 @@ def train(config: Config):
     trainer.fit(train_loader, val_loader, start_epoch=trainer.current_epoch)
 
 
-if __name__ == "__main__":
-    # Load configuration from YAML file
-    config = load_config("configs/seq2seq_training.yaml")
+def main() -> None:
+    """Parse CLI arguments and launch training from the selected config."""
+    parser = argparse.ArgumentParser(description="Train a configured language model.")
+    parser.add_argument(
+        "-c",
+        "--config",
+        default="configs/gptstyle_training.yaml",
+        help="Path to the YAML configuration file (default: %(default)s).",
+    )
+    args = parser.parse_args()
+
+    config = load_config(args.config)
     print(config)
 
-    # Start training
     train(config)
+
+
+if __name__ == "__main__":
+    main()
