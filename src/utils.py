@@ -15,6 +15,7 @@ from model import GPTModel, Seq2SeqModel
 def get_dataset(config: Config):
     """Build model-appropriate datasets and their train/validation loaders."""
     if config.model.model_type == "Seq2Seq":
+        #keep this part hard-coded
         dataset = TranslationDataset(
             dataset=load_dataset("Helsinki-NLP/opus_books", "en-nl", split="train"),
             seq_len=config.data.seq_len,

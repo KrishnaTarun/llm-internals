@@ -38,7 +38,7 @@ def main() -> None:
     parser.add_argument(
         "-c",
         "--config",
-        default="configs/gptstyle_training.yaml",
+        default="configs/seq2seq_training.yaml",
         help="Path to the YAML configuration file (default: %(default)s).",
     )
     args = parser.parse_args()
