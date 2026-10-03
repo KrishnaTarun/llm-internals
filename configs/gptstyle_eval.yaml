@@ -1,6 +1,6 @@
 data:
     # train_val_split:
-    tokenizer_dir: "dataset_artifacts/gpt"
+    # tokenizer_dir: "dataset_artifacts/gpt"
     seq_len: 100
     stride: 50
 
