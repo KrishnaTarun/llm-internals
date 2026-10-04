@@ -51,7 +51,7 @@ Training downloads the source datasets from Hugging Face Datasets on the first r
 - **Seq2Seq translation:** Uses the English-to-Dutch (`en-nl`) configuration of [OPUS Books](https://huggingface.co/datasets/Helsinki-NLP/opus_books), taking its `train` split and dividing it into 80% training and 20% validation examples. The English and Dutch WordLevel tokenizers are stored in `dataset_artifacts/translation/`. Inputs are truncated or padded to 100 tokens.
 - **GPT-style language model:** Uses the raw-text `wikitext-2-raw-v1` configuration of [WikiText](https://huggingface.co/datasets/Salesforce/wikitext), with its `train` and `validation` splits. Text is tokenized with a WordLevel tokenizer stored in `dataset_artifacts/gpt/gpt.json`, then divided into overlapping 100-token sequences with a stride of 50.
 
-The tokenizer JSON files are included in the repository. If a tokenizer file is missing, the code builds a tokenizer from the dataset and saves it in the corresponding artifact directory.
+The tokenizer JSON files are generated locally under the corresponding `dataset_artifacts/` (generated locally as well) subdirectory.
 
 ### Training
 
@@ -69,9 +69,11 @@ The Seq2Seq configuration is `configs/seq2seq_training.yaml`, and its intended c
 uv run python src/train.py --config configs/seq2seq_training.yaml
 ```
 
-However, Seq2Seq training currently fails before training starts: the dataset loader returns three values while the training entry point expects two, and model construction refers to an undefined dataset variable. The Seq2Seq command will work after that integration issue is fixed.
+<!-- However, Seq2Seq training currently fails before training starts: the dataset loader returns three values while the training entry point expects two, and model construction refers to an undefined dataset variable. The Seq2Seq command will work after that integration issue is fixed.
 
-Both configs currently specify 10 epochs and a batch size of 64. Training and validation losses are printed in the terminal. The default device is CUDA when available and CPU otherwise.
+Both configs currently specify 10 epochs and a batch size of 64. Training and validation losses are printed in the terminal. The default device is CUDA when available and CPU otherwise. -->
+
+**The number of encoder and decoder layers can be configured as per requirement. The supplied configs use relatively few layers to keep training compute and memory requirements manageable: Seq2Seq uses 2 encoder and 1 decoder layer, while GPT-style uses 3 decoder layers.**
 
 ### Training Outputs
 
@@ -84,7 +86,6 @@ The current training loop does not save generated text or a separate predictions
 ```text
 .
 ├── configs/                 # Training configurations
-├── dataset_artifacts/       # Tokenizers and prepared dataset artifacts
 ├── src/
 │   ├── model_components/    # Encoder, decoder, attention, and sub-blocks
 │   ├── config.py            # Configuration loading
