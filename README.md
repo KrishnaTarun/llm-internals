@@ -93,6 +93,8 @@ uv run python src/train.py --config configs/seq2seq_training.yaml
 
 Both configs currently specify 10 epochs and a batch size of 64. Training and validation losses are printed in the terminal. The default device is CUDA when available and CPU otherwise. -->
 
+**GPU note:** Training has been tested on CPU. The current [`pyproject.toml`](pyproject.toml) configures `torch` and `torchvision` to install from PyTorch's CPU-only package index, so using a GPU requires installing PyTorch builds compatible with your operating system and GPU, and adjusting the package source configuration. Follow the [official PyTorch installation selector](https://pytorch.org/get-started/locally/) for the right build. The current device selection checks for CUDA; it does not select Apple's MPS backend automatically. GPU setup may therefore need some platform-specific adjustments and verification.
+
 **The number of encoder and decoder layers can be configured as per requirement. The supplied configs use relatively few layers to keep training compute and memory requirements manageable: Seq2Seq uses 2 encoder and 1 decoder layer, while GPT-style uses 3 decoder layers.**
 
 ### Training Outputs
