@@ -6,6 +6,26 @@ The goal of this repository is to **learn by implementing**. I start with the or
 
 The focus is not on building the largest model, but on understanding the **mechanisms, design choices, and trade-offs** that make these models work.
 
+## Learning Path
+
+You can read and follow the implementation without installing the environment or downloading the datasets. For a guided tour, read the files in this order:
+
+1. **Compare the configurations:** [`seq2seq_training.yaml`](configs/seq2seq_training.yaml) and [`gptstyle_training.yaml`](configs/gptstyle_training.yaml) show the model sizes, layer counts, and sequence lengths used in the examples.
+2. **Learn the building blocks:** [`attention.py`](src/model_components/attention.py), [`pos_encoding.py`](src/model_components/pos_encoding.py), and [`sub_blocks.py`](src/model_components/sub_blocks.py) implement multi-head attention, positional information, embeddings, feed-forward layers, and residual connections.
+3. **Follow the Transformer layers:** [`encoder.py`](src/model_components/encoder.py) builds the encoder stack; [`decoder.py`](src/model_components/decoder.py) contains both the encoder-connected Seq2Seq decoder and the causal GPT-style decoder.
+4. **Compare complete models:** [`model.py`](src/model.py) assembles these components into the Seq2Seq and GPT-style models.
+5. **Trace a training run:** [`tokenization.py`](src/tokenization.py) and [`dataset.py`](src/dataset.py) prepare tokens and batches; [`train.py`](src/train.py), [`trainer.py`](src/trainer.py), and [`utils.py`](src/utils.py) connect configuration, model creation, optimization, and checkpointing.
+
+At a high level, Seq2Seq encodes an input sequence and uses its decoder to produce a target sequence. GPT-style is decoder-only: causal attention lets each position use earlier tokens to predict the next one. Both models are implemented from scratch here; they are not pretrained models.
+
+## Why Seq2Seq and GPT-Style?
+
+Seq2Seq is a good place to begin because it shows both main parts of the original Transformer: an **encoder** reads the input, and a **decoder** creates the output using what the encoder learned. In translation, for example, the encoder reads an English sentence and the decoder generates its Dutch translation. This makes it easier to study attention, masking, and how the encoder and decoder work together.
+
+GPT-style focuses on the **decoder**. It does not have a separate encoder; instead, causal attention lets it use the text so far to predict the next token. This is the basic pattern behind many decoder-only language models.
+
+Studying Seq2Seq first gives you a foundation for understanding the Transformer parts. Comparing it with GPT-style then shows how a model can use the decoder on its own for language generation. These two architectures are useful starting points, though they do not cover every type of language model.
+
 ## Setting up the Environment
 
 This project uses Python 3.11 and [uv](https://docs.astral.sh/uv/) to manage its environment and dependencies.
