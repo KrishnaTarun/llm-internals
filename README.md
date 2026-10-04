@@ -6,7 +6,7 @@ The goal of this repository is to **learn by implementing**. I start with the or
 
 The focus is not on building the largest model, but on understanding the **mechanisms, design choices, and trade-offs** that make these models work.
 
-## Working Environment
+## Setting up the Environment
 
 This project uses Python 3.11 and [uv](https://docs.astral.sh/uv/) to manage its environment and dependencies.
 
@@ -28,6 +28,56 @@ This project uses Python 3.11 and [uv](https://docs.astral.sh/uv/) to manage its
 	```sh
 	source .venv/bin/activate
 	```
+
+## System Information
+
+The project was run on the following system:
+
+- **Device:** MacBook Air (MacBookAir8,2)
+- **Processor:** 1.6 GHz dual-core Intel Core i5
+- **Memory:** 8 GB
+- **Operating system:** macOS 14.8.7
+- **Architecture:** x86_64
+- **Python:** 3.11
+
+Training time and resource usage may vary on other hardware and operating systems.
+
+## Running the Models
+
+### Datasets
+
+Training downloads the source datasets from Hugging Face Datasets on the first run, so an internet connection is required. Downloaded datasets are managed by the Hugging Face cache.
+
+- **Seq2Seq translation:** Uses the English-to-Dutch (`en-nl`) configuration of [OPUS Books](https://huggingface.co/datasets/Helsinki-NLP/opus_books), taking its `train` split and dividing it into 80% training and 20% validation examples. The English and Dutch WordLevel tokenizers are stored in `dataset_artifacts/translation/`. Inputs are truncated or padded to 100 tokens.
+- **GPT-style language model:** Uses the raw-text `wikitext-2-raw-v1` configuration of [WikiText](https://huggingface.co/datasets/Salesforce/wikitext), with its `train` and `validation` splits. Text is tokenized with a WordLevel tokenizer stored in `dataset_artifacts/gpt/gpt.json`, then divided into overlapping 100-token sequences with a stride of 50.
+
+The tokenizer JSON files are included in the repository. If a tokenizer file is missing, the code builds a tokenizer from the dataset and saves it in the corresponding artifact directory.
+
+### Training
+
+Run commands from the repository root. The training script accepts a YAML config; if `--config` is omitted, it defaults to `configs/gptstyle_training.yaml`.
+
+To train the GPT-style model:
+
+```sh
+uv run python src/train.py --config configs/gptstyle_training.yaml
+```
+
+The Seq2Seq configuration is `configs/seq2seq_training.yaml`, and its intended command is:
+
+```sh
+uv run python src/train.py --config configs/seq2seq_training.yaml
+```
+
+However, Seq2Seq training currently fails before training starts: the dataset loader returns three values while the training entry point expects two, and model construction refers to an undefined dataset variable. The Seq2Seq command will work after that integration issue is fixed.
+
+Both configs currently specify 10 epochs and a batch size of 64. Training and validation losses are printed in the terminal. The default device is CUDA when available and CPU otherwise.
+
+### Training Outputs
+
+Checkpoints are saved under `output/checkpoints/<model_type>/model.pt`, for example `output/checkpoints/GPTstyle/model.pt` or `output/checkpoints/Seq2Seq/model.pt`. The same checkpoint file is overwritten after each epoch; it stores the model state, optimizer state, and completed epoch. To resume, set `training.resume_from` in the selected YAML config to the checkpoint path.
+
+The current training loop does not save generated text or a separate predictions file. It saves checkpoints and prints loss metrics to the terminal.
 
 ## Directory Structure
 
