@@ -123,4 +123,4 @@ The current training loop does not save generated text or a separate predictions
 
 ## References
 
-[1] arXiv:2604.00965. "The architecture of transformer-based language models and their training dynamics." Available at: https://arxiv.org/pdf/2604.00965
+- [The architecture of transformer-based language models and their training dynamics](https://arxiv.org/pdf/2604.00965)
