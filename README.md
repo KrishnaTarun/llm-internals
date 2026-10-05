@@ -75,15 +75,14 @@ The tokenizer JSON files are generated locally under the corresponding `dataset_
 
 ### Training
 
-Run commands from the repository root. The training script accepts a YAML config; if `--config` is omitted, it defaults to `configs/gptstyle_training.yaml`.
-
 To train the GPT-style model:
 
 ```sh
 uv run python src/train.py --config configs/gptstyle_training.yaml
 ```
 
-The Seq2Seq configuration is `configs/seq2seq_training.yaml`, and its intended command is:
+and likewise for Seq2Seq configuration :
+
 
 ```sh
 uv run python src/train.py --config configs/seq2seq_training.yaml
@@ -121,3 +120,7 @@ The current training loop does not save generated text or a separate predictions
 ├── uv.lock                  # Locked dependency versions
 └── .python-version          # Project Python version
 ```
+
+## References
+
+[1] arXiv:2604.00965. "The architecture of transformer-based language models and their training dynamics." Available at: https://arxiv.org/pdf/2604.00965
