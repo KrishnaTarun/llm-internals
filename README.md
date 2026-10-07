@@ -126,3 +126,4 @@ The current training loop does not save generated text or a separate predictions
 - [The architecture of transformer-based language models and their training dynamics](https://arxiv.org/pdf/2604.00965)
 - [Understanding and Coding the KV Cache in LLMs from Scratch](https://magazine.sebastianraschka.com/p/coding-the-kv-cache-in-llms)
 - [Primer on LLM Post-Training](https://pytorch.org/blog/a-primer-on-llm-post-training/)
+- [GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints](https://arxiv.org/pdf/2305.13245v2)
