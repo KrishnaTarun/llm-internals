@@ -33,10 +33,6 @@ def generate_sample(
 	
 	"""Sample tokens from ``model``, preserving the prompt in the output."""
 
-	
-
-	
-
 	for _ in range(max_new_tokens):
 		model_input = input_ids[:, -context_size:]
 		logits = model(model_input)
@@ -99,8 +95,6 @@ def infer(config: Config):
 
     out = generate_text(device, model, tokenizer, prompt="Once upon a time", max_new_tokens=50, context_size=config.data.seq_len)
     print(out)
-
-
 
 def main() -> None:
     """Parse CLI arguments and launch training from the selected config."""
