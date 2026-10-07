@@ -1,4 +1,0 @@
-- fix path for tokenization 
-- fix configs as while runnign infernece its reading vocab_size from config instrad tokenizer file sould be used first to get voab size
--  check if while gernatin if it would ahve been a batch what would be the output
--  

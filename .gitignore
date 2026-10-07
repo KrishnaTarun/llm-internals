@@ -1,6 +1,8 @@
 .venv/
 .vscode/
 roadmap/
+docs/
+output/
 
 # Python bytecode and caches
 **/__pycache__/
