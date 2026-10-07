@@ -124,3 +124,5 @@ The current training loop does not save generated text or a separate predictions
 ## References
 
 - [The architecture of transformer-based language models and their training dynamics](https://arxiv.org/pdf/2604.00965)
+- [Understanding and Coding the KV Cache in LLMs from Scratch](https://magazine.sebastianraschka.com/p/coding-the-kv-cache-in-llms)
+- [Primer on LLM Post-Training](https://pytorch.org/blog/a-primer-on-llm-post-training/)
