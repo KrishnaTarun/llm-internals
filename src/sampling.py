@@ -28,9 +28,10 @@ class Sampling:
         
         new_logits = torch.full_like(logits, float("-inf"))
 
-        #gives a sorted list of the top k values and their indices along the last dimension
+        # gives a sorted list of the top k values and their indices along the last dimension
         values, indices = torch.topk(logits, k, dim=-1)
-        new_logits[indices] = values 
+
+        new_logits.scatter_(dim=-1, index=indices, src=values)
         probs = torch.softmax(new_logits, dim=-1)
         return torch.multinomial(probs, num_samples=1).reshape(-1, 1)
     

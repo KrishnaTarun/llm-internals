@@ -44,6 +44,18 @@ class TrainingConfig:
     warmup_steps: int = 4000
     seed: int = 42
 
+@dataclass
+class InferenceConfig:
+    """Inference configs and hyper-parameters"""
+
+    device: str = field(default_factory=lambda: "cuda" if torch.cuda.is_available() else "cpu")
+    batch_size: int = 1
+    max_new_tokens: int = 50
+    context_size: int = 100
+    sampling_strategy: str = "greedy"
+    top_k : int = 3
+    temperature: float = 0.2
+
 
 @dataclass
 class Config:
@@ -52,6 +64,7 @@ class Config:
     model: ModelConfig = field(default_factory=ModelConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
     data: DatasetConfig = field(default_factory=DatasetConfig)
+    inference: InferenceConfig = field(default_factory=InferenceConfig)
 
 
 def load_config(path: str) -> Config:

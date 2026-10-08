@@ -15,31 +15,31 @@ from sampling import Sampling
 
 #FIXME: incorporate tempeature and top_k
 
-def generate_sample(
-	model,
-	input_ids,
-	max_new_tokens,
-	context_size,
-	sampling_strategy="probabilistic",
-	temperature=0.0,
-	top_k=None,
-	eos_token_id=None,
+def generate_sample(config: Config,
+	model: torch.nn.Module,
+	input_ids: torch.Tensor,
+	eos_token_id: int = None,
 ):
 
 	#
-	sampling_method = getattr(Sampling, sampling_strategy, None)
+	sampling_method = getattr(Sampling, config.inference.sampling_strategy, None)
 	if not callable(sampling_method):
-		raise ValueError(f"Unknown sampling type: {sampling_strategy}. Must be one of: greedy, probabilistic, top_k, temperature.")
+		raise ValueError(f"Unknown sampling type: {config.inference.sampling_strategy}. Must be one of: greedy, probabilistic, top_k, temperature.")
+
 	
 	"""Sample tokens from ``model``, preserving the prompt in the output."""
 
-	for _ in range(max_new_tokens):
-		model_input = input_ids[:, -context_size:]
+	for _ in range(config.inference.max_new_tokens):
+		model_input = input_ids[:, -config.data.seq_len:]
 		logits = model(model_input)
-		#need last prediction
+	
 		nxt_logit = logits[:, -1, :]
-
-		nxt_id = sampling_method(nxt_logit)
+		if config.inference.sampling_strategy == "top_k":
+			nxt_id = sampling_method(nxt_logit, k=config.inference.top_k)
+		elif config.inference.sampling_strategy == "temperature":
+			nxt_id = sampling_method(nxt_logit, temperature=config.inference.temperature)
+		else:
+			nxt_id = sampling_method(nxt_logit)
 		input_ids = torch.cat((input_ids, nxt_id), dim=1)
 		if eos_token_id is not None and torch.all(nxt_id == eos_token_id):
 			break
@@ -47,7 +47,7 @@ def generate_sample(
 	return input_ids
 
 
-def generate_text(device, model, tokenizer, prompt, max_new_tokens=50, context_size=None, **kwargs):
+def generate_text(config: Config, model: torch.nn.Module, tokenizer: Tokenizer, device: torch.device, prompt: str) -> str:
 	"""Generate and decode a continuation of ``prompt``.
 
 	``generate_sample`` is expected to return token IDs including the prompt.
@@ -57,12 +57,10 @@ def generate_text(device, model, tokenizer, prompt, max_new_tokens=50, context_s
 	input_ids = torch.tensor(tokenizer.encode(prompt).ids).unsqueeze(0).to(device)
 	model.eval()
 	# with torch.inference_mode(): #read abouth this before using it
-	output_ids = generate_sample(
+	output_ids = generate_sample(config,
 			model,
 			input_ids,
-			max_new_tokens=max_new_tokens,
-			context_size=context_size,
-			**kwargs,
+			eos_token_id=None
 	).squeeze(0).cpu().numpy().tolist()
 
 	return tokenizer.decode(output_ids, skip_special_tokens=True)
@@ -75,6 +73,7 @@ def infer(config: Config):
 
     
 	#======get tokenizer first==============
+	#FIXEM: fix this path 
     project_root = Path(__file__).resolve().parent.parent
     artifact_dir = project_root / "dataset_artifacts" / "gpt"
     tokenizer_path = artifact_dir / "gpt.json"
@@ -87,13 +86,13 @@ def infer(config: Config):
 
     if config.model.resume_from is None:
     	raise ValueError("resume_from must be specified in the config for inference.")
-    device = config.training.device
-    ckpoint = torch.load(config.model.resume_from, map_location=device	)
+    device = config.training.device #TODO: look into to mapping of device
+    ckpoint = torch.load(config.model.resume_from, map_location=device)
 
     model.load_state_dict(ckpoint["model_state_dict"])
     model.to(device)
 
-    out = generate_text(device, model, tokenizer, prompt="Once upon a time", max_new_tokens=50, context_size=config.data.seq_len)
+    out = generate_text(config, model, tokenizer,device, prompt="Once upon a time")
     print(out)
 
 def main() -> None:
