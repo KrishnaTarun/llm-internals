@@ -26,8 +26,8 @@ def train(config: Config):
 
     trainer = LLMTrainer(model, config)
 
-    if config.training.resume_from is not None:
-        trainer.load_checkpoint(config.training.resume_from)
+    if config.model.resume_from is not None:
+        trainer.load_checkpoint(config.model.resume_from)
 
     trainer.fit(train_loader, val_loader, start_epoch=trainer.current_epoch)
 

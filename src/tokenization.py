@@ -16,6 +16,7 @@ class GPTSimpleTokenizer:
             """Initialize a tokenizer from disk or train one from ``dataset``."""
             self.ds = dataset
             # ===========setup path======
+            #FIXME: This is a hacky way to get the project root, but it works for now.
             project_root = Path(__file__).resolve().parent.parent
             artifact_dir = project_root / "dataset_artifacts" / "gpt"
 

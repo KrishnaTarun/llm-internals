@@ -18,6 +18,8 @@ class ModelConfig:
     dec_num_layers: int = 1
     dropout: float = 0.1
     output_dir: str = "output"
+    checkpoint_dir: str = "output/checkpoints"  # for save model
+    resume_from: str = None  # model path: e.g,: "output/checkpoints/Seq2Seq/model.pt"
 
 
 @dataclass
@@ -27,7 +29,7 @@ class DatasetConfig:
     tokenizer_path: str = "translation_en-nl_tokenizer.json"
     seq_len: int = 100
     stride:int = 50
-    vocab_size = 1000
+    vocab_size = 1000 #this needs to be update from tokenization
 
 
 @dataclass
@@ -41,8 +43,18 @@ class TrainingConfig:
     weight_decay: float = 0.0001
     warmup_steps: int = 4000
     seed: int = 42
-    checkpoint_dir: str = "output/checkpoints"  # for save model
-    resume_from: str = None  # model path: e.g,: "output/checkpoints/Seq2Seq/model.pt"
+
+@dataclass
+class InferenceConfig:
+    """Inference configs and hyper-parameters"""
+
+    device: str = field(default_factory=lambda: "cuda" if torch.cuda.is_available() else "cpu")
+    batch_size: int = 1
+    max_new_tokens: int = 50
+    context_size: int = 100
+    sampling_strategy: str = "greedy"
+    top_k : int = 3
+    temperature: float = 0.2
 
 
 @dataclass
@@ -52,6 +64,7 @@ class Config:
     model: ModelConfig = field(default_factory=ModelConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
     data: DatasetConfig = field(default_factory=DatasetConfig)
+    inference: InferenceConfig = field(default_factory=InferenceConfig)
 
 
 def load_config(path: str) -> Config:
