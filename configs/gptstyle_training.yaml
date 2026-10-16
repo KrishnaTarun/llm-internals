@@ -11,7 +11,7 @@ model:
     num_heads: 8
     dec_num_layers: 3
     dropout: 0.1
-    resume_from: None #output/checkpoints/GPTstyle/model.pt
+    # resume_from: None #output/checkpoints/GPTstyle/model.pt
 
 training:
 
