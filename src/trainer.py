@@ -128,7 +128,7 @@ class LLMTrainer:
 
             # At the moment no saving model after every epoch
             self.current_epoch = epoch_index
-            self.save_checkpoint(epoch_index, self.config.training.checkpoint_dir)
+            self.save_checkpoint(epoch_index, self.config.model.checkpoint_dir)
 
     @torch.no_grad()
     def evaluate(self, val_loader):
